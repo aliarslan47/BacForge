@@ -17,10 +17,10 @@ class StatisticsVisualizationModule(Module):
     enabled_key = "stats"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "04_standardized" / "data_type.json"]
+        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "data_type.json"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "dashboard_data.json"]
+        return [self.out_dir / "dashboard_data.json"]
 
     def run(self):
         self.check_inputs()
@@ -42,37 +42,37 @@ class StatisticsVisualizationModule(Module):
 
         # Load key datasets
         c5_data = []
-        c5_file = run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "04_standardized" / "closest_5_strains.json"
+        c5_file = run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
         if c5_file.exists():
             with open(c5_file, "r", encoding="utf-8") as fh:
                 c5_data = json.load(fh)
 
         amr_data = []
-        amr_file = run_dir / "M08_AMR" / "04_standardized" / "amr.json"
+        amr_file = run_dir / "M08_AMR" / "amr.json"
         if amr_file.exists():
             with open(amr_file, "r", encoding="utf-8") as fh:
                 amr_data = json.load(fh).get("amr_genes", [])
 
         vir_data = []
-        vir_file = run_dir / "M09_VIRULENCE" / "04_standardized" / "virulence.json"
+        vir_file = run_dir / "M09_VIRULENCE" / "virulence.json"
         if vir_file.exists():
             with open(vir_file, "r", encoding="utf-8") as fh:
                 vir_data = json.load(fh).get("virulence_genes", [])
 
         plasmid_data = []
-        plasmid_file = run_dir / "M10_PLASMID" / "04_standardized" / "plasmids.json"
+        plasmid_file = run_dir / "M10_PLASMID" / "plasmids.json"
         if plasmid_file.exists():
             with open(plasmid_file, "r", encoding="utf-8") as fh:
                 plasmid_data = json.load(fh).get("plasmids", [])
 
         mge_data = []
-        mge_file = run_dir / "M11_MOBILE_GENETIC_ELEMENTS" / "04_standardized" / "mobile_elements.json"
+        mge_file = run_dir / "M11_MOBILE_GENETIC_ELEMENTS" / "mobile_elements.json"
         if mge_file.exists():
             with open(mge_file, "r", encoding="utf-8") as fh:
                 mge_data = json.load(fh).get("mobile_elements", [])
 
         tree_nwk = ""
-        tree_file = run_dir / "M16_PHYLOGENOMICS" / "04_standardized" / "tree.nwk"
+        tree_file = run_dir / "M16_PHYLOGENOMICS" / "tree.nwk"
         if tree_file.exists():
             tree_nwk = tree_file.read_text().strip()
 

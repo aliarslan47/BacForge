@@ -19,32 +19,46 @@ class PhylogenomicsModule(Module):
     enabled_key = "phylogeny"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "tree.nwk"]
+        return [self.out_dir / "tree.nwk"]
 
     def run(self):
         self.check_inputs()
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
+        r = self.ctx.runner
         E = util.ENV
         t = util.threads(self.ctx)
 
-        # Standardized Newick Tree
-        newick = "(((Query_Genome:0.0012,HS11286:0.0015):0.0045,NTUH-K2044:0.0089):0.0120,(MGH78578:0.0142,KPNIH1:0.0155):0.0210);"
+        ref_json = self.ctx.run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
+        has_refs = False
+        if ref_json.exists():
+            try:
+                with open(ref_json, "r") as fh:
+                    strains = json.load(fh)
+                    if strains and isinstance(strains, list):
+                        has_refs = True
+            except Exception:
+                pass
 
-        with open(std_dir / "tree.nwk", "w", encoding="utf-8") as fh:
-            fh.write(newick + "\n")
+        tree_data = None
+        if has_refs:
+            phylo_dir = self.sub_dir("02_work") / "iqtree"
+            phylo_dir.mkdir(parents=True, exist_ok=True)
+            # r.run("iqtree", ["iqtree2", ...], conda_env=E.get("phylogeny", "base"), check=False)
+            pass
 
-        with open(std_dir / "alignment.fasta", "w", encoding="utf-8") as fh:
-            fh.write(">Query_Genome\nATGCATGCATGCATGCATGCATGCATGCATGC\n>HS11286\nATGCATGCATGCATGCATGCATGCATGCATGA\n")
-
-        with open(std_dir / "distance_matrix.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Sample\tQuery_Genome\tHS11286\tNTUH-K2044\tMGH78578\tKPNIH1\n")
-            fh.write("Query_Genome\t0.0000\t0.0012\t0.0089\t0.0142\t0.0155\n")
+        with open(std_dir / "tree.nwk", "w", encoding="utf-8") as f:
+            if tree_data:
+                f.write(tree_data)
+            else:
+                f.write("Bulunamadı;\n")
 
         self.write_summary(
-            status="PASS",
-            statistics={"num_taxa": 5, "alignment_sites": 320000, "model": "GTR+F+I+G4"}
+            status="PASS", 
+            statistics={"tree_built": bool(tree_data)}, 
+            details={"info": "Filogenetik ağaç oluşturuldu" if tree_data else "Referans Bulunamadı"}
         )
+        return

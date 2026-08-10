@@ -43,4 +43,30 @@ if [ ! -d "$DB/checkv"/checkv-db-* ]; then
   conda run -n ali-checkv checkv download_database "$DB/checkv"
 fi
 
+# --- Kraken2 DB (Standard-8GB ~8GB) ---
+if [ ! -d "$DB/kraken2" ] || [ -z "$(ls -A "$DB/kraken2")" ]; then
+  echo "[+] Kraken2 DB (Standard-8GB)"
+  mkdir -p "$DB/kraken2"
+  # Using AWS S3 mirror which is much more reliable than JHU FTP
+  wget -qO- https://genome-idx.s3.amazonaws.com/kraken/k2_standard_08gb_20240904.tar.gz | tar zxvf - -C "$DB/kraken2"
+fi
+
+# --- Mash RefSeq DB ---
+if [ ! -f "$DB/mash/RefSeqSketchesDefaults.msh" ]; then
+  echo "[+] Mash RefSeq DB"
+  mkdir -p "$DB/mash"
+  # Use HTTP instead of HTTPS to avoid SSL handshake issues on gembox
+  wget -qO "$DB/mash/RefSeqSketchesDefaults.msh.gz" http://gembox.cbcb.umd.edu/mash/refseq.genomes%2Bplasmid.k21.s1000.msh.gz
+  gunzip -f "$DB/mash/RefSeqSketchesDefaults.msh.gz"
+fi
+
+# --- Abricate DB ---
+if [ ! -d "$DB/abricate" ]; then
+  echo "[+] Abricate DB (setupdb)"
+  # Abricate updates its own internal DBs, but we'll just run setupdb
+  conda run -n ali-virulence abricate --setupdb
+  mkdir -p "$DB/abricate"
+  touch "$DB/abricate/installed.txt"
+fi
+
 echo "== DB indirme bitti. Her DB klasörüne version.txt eklenecek (rapora yazılır). =="

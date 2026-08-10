@@ -18,14 +18,14 @@ class PhageCRISPRDefenseModule(Module):
     enabled_key = "genomad"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "prophages.tsv"]
+        return [self.out_dir / "prophages.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
         E = util.ENV
@@ -39,44 +39,33 @@ class PhageCRISPRDefenseModule(Module):
             r.run("genomad", ["genomad", "end-to-end", "--cleanup", str(genome), str(genomad_out), str(genomad_db), "--threads", str(t)],
                   conda_env=E["genomad"], version_cmd=["genomad", "--version"], check=False)
 
-        # Standardized Prophages
-        prophages = [
-            {"prophage_id": "vB_KpnP_1", "contig": "contig_1", "start": 120000, "end": 165000, "length_bp": 45000, "type": "Prophage (Caudoviricetes)", "completeness": "Complete", "taxonomy": "Caudoviricetes; Myoviridae", "genes_count": 52}
-        ]
+        phages = []
+        genomad_virus = genomad_out / "genome_summary" / "genome_virus_summary.tsv"
+        if genomad_virus.exists():
+            with open(genomad_virus, "r", encoding="utf-8") as fh:
+                header = fh.readline()
+                for line in fh:
+                    parts = line.strip().split("\t")
+                    if len(parts) >= 6:
+                        phages.append({
+                            "phage_id": parts[0],
+                            "contig": parts[0].rsplit('_', 1)[0] if '_' in parts[0] else parts[0],
+                            "length": parts[1],
+                            "topology": parts[2],
+                            "virus_score": parts[5]
+                        })
 
-        with open(std_dir / "prophages.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Prophage_ID\tContig\tStart\tEnd\tLength_bp\tType\tCompleteness\tTaxonomy\n")
-            for p in prophages:
-                fh.write(f"{p['prophage_id']}\t{p['contig']}\t{p['start']}\t{p['end']}\t{p['length_bp']}\t{p['type']}\t{p['completeness']}\t{p['taxonomy']}\n")
-
-        with open(std_dir / "prophages.fasta", "w", encoding="utf-8") as fh:
-            fh.write(">vB_KpnP_1_prophage_region\nATGCATGCATGCATGCATGCATGCATGCATGCATGC\n")
-
-        # Standardized CRISPR Arrays
-        crispr_arrays = [
-            {"crispr_id": "CRISPR_1", "contig": "contig_1", "start": 340000, "end": 342500, "cas_type": "Type I-E", "repeat_sequence": "GTGTTCCCCGCATAGGCGGGGAACAC", "spacer_count": 28}
-        ]
-
-        with open(std_dir / "crispr.tsv", "w", encoding="utf-8") as fh:
-            fh.write("CRISPR_ID\tContig\tStart\tEnd\tCas_Type\tRepeat_Seq\tSpacer_Count\n")
-            for c in crispr_arrays:
-                fh.write(f"{c['crispr_id']}\t{c['contig']}\t{c['start']}\t{c['end']}\t{c['cas_type']}\t{c['repeat_sequence']}\t{c['spacer_count']}\n")
-
-        with open(std_dir / "crispr_spacers.fasta", "w", encoding="utf-8") as fh:
-            fh.write(">CRISPR_1_spacer_1\nGTTTTAGAGCTAGAAATAGCAAGTTAAAATAAGGCT\n")
-
-        # Standardized Defense Systems
-        defense_systems = [
-            {"system_id": "RM_Type_I", "type": "Restriction-Modification", "subtype": "Type I", "contig": "contig_1", "start": 210000, "end": 218000, "genes": "hsdR, hsdM, hsdS"},
-            {"system_id": "AbORT_1", "type": "Abortive Infection", "subtype": "Abi", "contig": "contig_1", "start": 450000, "end": 452000, "genes": "abiAlpha"}
-        ]
-
-        with open(std_dir / "defense_systems.tsv", "w", encoding="utf-8") as fh:
-            fh.write("System_ID\tType\tSubtype\tContig\tStart\tEnd\tGenes\n")
-            for d in defense_systems:
-                fh.write(f"{d['system_id']}\t{d['type']}\t{d['subtype']}\t{d['contig']}\t{d['start']}\t{d['end']}\t{d['genes']}\n")
+        with open(std_dir / "prophages.tsv", "w", encoding="utf-8") as f:
+            f.write("Phage_ID\tContig\tLength\tTopology\tVirus_Score\n")
+            if phages:
+                for p in phages:
+                    f.write(f"{p['phage_id']}\t{p['contig']}\t{p['length']}\t{p['topology']}\t{p['virus_score']}\n")
+            else:
+                f.write("Bulunamadı\tBulunamadı\t-\t-\t-\n")
 
         self.write_summary(
-            status="PASS",
-            statistics={"prophage_count": len(prophages), "crispr_arrays": len(crispr_arrays), "defense_systems": len(defense_systems)}
+            status="PASS", 
+            statistics={"phage_count": len(phages)}, 
+            details={"info": "Prophage analizi tamamlandı" if phages else "Prophage Bulunamadı"}
         )
+        return

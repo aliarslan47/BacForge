@@ -18,33 +18,47 @@ class VirulenceModule(Module):
     enabled_key = "vfdb"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "virulence_genes.tsv"]
+        return [self.out_dir / "virulence_genes.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
         E = util.ENV
 
         vf_out = self.sub_dir("03_native_outputs") / "abricate_vfdb.tsv"
         r.run("abricate_vfdb", ["abricate", "--db", "vfdb", str(genome)],
-              conda_env="base", version_cmd=["abricate", "--version"], stdout_path=str(vf_out), check=False)
+              conda_env=E.get("virulence", "base"), version_cmd=["abricate", "--version"], stdout_path=str(vf_out), check=False)
 
-        virulence_genes = [
-            {"gene_symbol": "ybtA", "category": "Iron Acquisition (Yersiniabactin)", "identity": "100.0", "coverage": "100.0", "contig": "contig_1", "start": "78000", "end": "79100"},
-            {"gene_symbol": "ybtP", "category": "Iron Acquisition (Yersiniabactin)", "identity": "99.8", "coverage": "100.0", "contig": "contig_1", "start": "79200", "end": "80800"},
-            {"gene_symbol": "iucA", "category": "Siderophore (Aerobactin)", "identity": "100.0", "coverage": "100.0", "contig": "plasmid_1", "start": "12000", "end": "13700"},
-            {"gene_symbol": "rmpA", "category": "Hypermucoviscosity", "identity": "99.5", "coverage": "99.0", "contig": "plasmid_1", "start": "15000", "end": "15600"}
-        ]
+        virulence_genes = []
+        if vf_out.exists():
+            with open(vf_out, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    if line.startswith("#"):
+                        continue
+                    parts = line.strip().split("\t")
+                    if len(parts) >= 14:
+                        virulence_genes.append({
+                            "contig": parts[1],
+                            "start": parts[2],
+                            "end": parts[3],
+                            "gene_symbol": parts[5],
+                            "coverage": parts[9],
+                            "identity": parts[10],
+                            "category": parts[13] if len(parts) > 13 else "unknown"
+                        })
 
         with open(std_dir / "virulence_genes.tsv", "w", encoding="utf-8") as fh:
             fh.write("Gene_Symbol\tCategory\tIdentity\tCoverage\tContig\tStart\tEnd\n")
-            for v in virulence_genes:
-                fh.write(f"{v['gene_symbol']}\t{v['category']}\t{v['identity']}\t{v['coverage']}\t{v['contig']}\t{v['start']}\t{v['end']}\n")
+            if virulence_genes:
+                for v in virulence_genes:
+                    fh.write(f"{v['gene_symbol']}\t{v['category']}\t{v['identity']}\t{v['coverage']}\t{v['contig']}\t{v['start']}\t{v['end']}\n")
+            else:
+                fh.write("Bulunamadı\tBulunamadı\t-\t-\t-\t-\t-\n")
 
         with open(std_dir / "virulence.json", "w", encoding="utf-8") as fh:
             json.dump({"virulence_genes": virulence_genes}, fh, indent=2)
@@ -52,5 +66,5 @@ class VirulenceModule(Module):
         self.write_summary(
             status="PASS",
             statistics={"virulence_gene_count": len(virulence_genes)},
-            details={"categories": list(set(v["category"] for v in virulence_genes))}
+            details={"categories": list(set(v["category"] for v in virulence_genes)) if virulence_genes else ["Bulunamadı"]}
         )

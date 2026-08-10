@@ -22,10 +22,10 @@ class AssemblyModule(Module):
     enabled_key = "assembly"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "04_standardized" / "data_type.json"]
+        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "data_type.json"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "draft_genome.fasta"]
+        return [self.out_dir / "draft_genome.fasta"]
 
     def run(self):
         self.check_inputs()
@@ -62,7 +62,7 @@ class AssemblyModule(Module):
 
             if not long_fq:
                 # Check M01 filtered output
-                long_fq = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "filtered_long.fastq.gz"
+                long_fq = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "filtered_long.fastq.gz"
 
             r.run("flye", ["flye", "--nano-hq", str(long_fq), "-o", str(flye_dir), "-t", str(t)],
                   conda_env=E["flye"], version_cmd=["flye", "--version"])
@@ -73,8 +73,8 @@ class AssemblyModule(Module):
 
         # 3. SHORT_READ (SPAdes / SKESA)
         if data_type == "SHORT_READ":
-            clean_r1 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "clean_R1.fastq.gz"
-            clean_r2 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "clean_R2.fastq.gz"
+            clean_r1 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "clean_R1.fastq.gz"
+            clean_r2 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "clean_R2.fastq.gz"
 
             if not clean_r1.exists():
                 clean_r1 = inp
@@ -93,9 +93,9 @@ class AssemblyModule(Module):
 
         # 4. HYBRID (Unicycler / SPAdes hybrid)
         if data_type == "HYBRID":
-            clean_r1 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "clean_R1.fastq.gz"
-            clean_r2 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "clean_R2.fastq.gz"
-            filtered_long = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "04_standardized" / "filtered_long.fastq.gz"
+            clean_r1 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "clean_R1.fastq.gz"
+            clean_r2 = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "clean_R2.fastq.gz"
+            filtered_long = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "filtered_long.fastq.gz"
 
             uni_dir = self.sub_dir("02_work") / "unicycler"
             r.run("unicycler", ["unicycler", "-1", str(clean_r1), "-2", str(clean_r2), "-l", str(filtered_long), "-o", str(uni_dir), "-t", str(t)],

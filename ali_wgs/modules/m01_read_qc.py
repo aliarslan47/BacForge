@@ -20,7 +20,7 @@ class ReadQCModule(Module):
     enabled_key = "qc"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "04_standardized" / "data_type.json"]
+        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "data_type.json"]
 
     def outputs(self):
         return [self.out_dir / "M01_summary.json"]

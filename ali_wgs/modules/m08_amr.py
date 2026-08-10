@@ -18,14 +18,14 @@ class AMRModule(Module):
     enabled_key = "amr"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "amr_genes.tsv"]
+        return [self.out_dir / "amr_genes.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
         E = util.ENV
@@ -35,7 +35,7 @@ class AMRModule(Module):
         # 1. AMRFinderPlus
         amr_out = self.sub_dir("03_native_outputs") / "amrfinder.tsv"
         amr_db = Path(dbp) / "amrfinderplus" / "latest"
-        cmd = ["amrfinder", "-n", str(genome), "--plus", "-threads", str(t)]
+        cmd = ["amrfinder", "-n", str(genome), "--plus", "--threads", str(t)]
         if amr_db.exists():
             cmd.extend(["--database", str(amr_db)])
 
@@ -71,12 +71,7 @@ class AMRModule(Module):
                             })
 
         if not amr_genes:
-            amr_genes = [
-                {"gene_symbol": "blaKPC-2", "element_type": "AMR", "drug_class": "CARBAPENEM", "subclass": "BETA-LACTAM", "coverage": "100.0", "identity": "100.0", "contig": "contig_1", "start": "12000", "end": "12860", "strand": "+"},
-                {"gene_symbol": "blaTEM-1", "element_type": "AMR", "drug_class": "PENICILLIN", "subclass": "BETA-LACTAM", "coverage": "100.0", "identity": "100.0", "contig": "contig_1", "start": "45000", "end": "45860", "strand": "-"},
-                {"gene_symbol": "aac(6')-Ib-cr", "element_type": "AMR", "drug_class": "AMINOGLYCOSIDE/FLUOROQUINOLONE", "subclass": "AMINOGLYCOSIDE", "coverage": "100.0", "identity": "99.8", "contig": "contig_2", "start": "5400", "end": "6000", "strand": "+"},
-                {"gene_symbol": "sul1", "element_type": "AMR", "drug_class": "SULFONAMIDE", "subclass": "SULFONAMIDE", "coverage": "100.0", "identity": "100.0", "contig": "contig_2", "start": "11200", "end": "12000", "strand": "+"}
-            ]
+            print("[M08] WARNING: AMRFinderPlus output not found or empty.")
 
         # Write standardized amr_genes.tsv
         with open(std_dir / "amr_genes.tsv", "w", encoding="utf-8") as fh:

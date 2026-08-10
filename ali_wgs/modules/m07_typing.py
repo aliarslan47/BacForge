@@ -20,57 +20,63 @@ class StrainTypingModule(Module):
     enabled_key = "mlst"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "mlst_summary.tsv"]
+        return [self.out_dir / "mlst_summary.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
         E = util.ENV
 
         # 1. General MLST
         mlst_file = std_dir / "mlst_summary.tsv"
-        r.run("mlst", ["mlst", str(genome)], conda_env=E["illumina_qc"],
+        r.run("mlst", ["mlst", str(genome)], conda_env=E.get("typing", "base"),
               version_cmd=["mlst", "--version"], stdout_path=str(mlst_file), check=False)
 
         if not mlst_file.exists() or mlst_file.stat().st_size == 0:
-            with open(mlst_file, "w", encoding="utf-8") as fh:
-                fh.write("File\tScheme\tST\tAlleles\n")
-                fh.write(f"{genome.name}\tkpneumoniae\tST258\tgapA(3)\tinfB(3)\tmdh(1)\tpgi(1)\tphoE(1)\trpoB(1)\ttonB(79)\n")
-
-        # 2. cgMLST output
-        with open(std_dir / "cgmlst_summary.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Sample\tLoci_Analyzed\tLoci_Found\tcgST\n")
-            fh.write("Query\t629\t625\tcgST-10492\n")
+            print("MLST failed or produced no output.")
+            mlst_status = "FAIL"
+        else:
+            mlst_status = "PASS"
 
         # 3. Species-Specific Plugin Evaluation
-        species = self.ctx.detection.get("ncbi_species", "Klebsiella pneumoniae")
+        species = self.ctx.detection.get("ncbi_species", "Unknown")
         plugin_results = {}
 
         if "klebsiella" in species.lower():
             # Kleborate & Kaptive
             kleb_file = std_dir / "kleborate_results.tsv"
-            r.run("kleborate", ["kleborate", "--st258_subtyping", "-a", str(genome), "-o", str(kleb_file)],
-                  conda_env=E["kleborate"], version_cmd=["kleborate", "--version"], check=False)
-
-            plugin_results["Kleborate"] = "COMPLETED"
-            plugin_results["Kaptive"] = "COMPLETED (K-locus: KL107, O-locus: O2v2)"
+            res = r.run("kleborate", ["kleborate", "--st258_subtyping", "-a", str(genome), "-o", str(kleb_file)],
+                        conda_env=E.get("kleborate", "base"), version_cmd=["kleborate", "--version"], check=False)
+            if res and res.returncode == 0 and kleb_file.exists():
+                plugin_results["Kleborate"] = "COMPLETED"
+            else:
+                plugin_results["Kleborate"] = "FAIL"
         elif "escherichia" in species.lower() or "coli" in species.lower():
-            plugin_results["ECTyper"] = "COMPLETED (Serotype: O157:H7)"
+            # ECTyper for E. coli
+            ec_file = std_dir / "ectyper_results.tsv"
+            res = r.run("ectyper", ["ectyper", "-i", str(genome), "-o", str(ec_file.parent)],
+                        conda_env=E.get("ectyper", "base"), version_cmd=["ectyper", "--version"], check=False)
+            if res and res.returncode == 0:
+                plugin_results["ECTyper"] = "COMPLETED"
+            else:
+                plugin_results["ECTyper"] = "FAIL"
         elif "salmonella" in species.lower():
-            plugin_results["SISTR"] = "COMPLETED (Serovar: Typhimurium)"
+            plugin_results["SISTR"] = "NOT_IMPLEMENTED"
         else:
             plugin_results["species_specific_module"] = "NOT_APPLICABLE"
 
         with open(std_dir / "species_plugins.json", "w", encoding="utf-8") as fh:
             json.dump(plugin_results, fh, indent=2)
 
+        final_status = "PASS" if mlst_status == "PASS" else "WARNING"
+
         self.write_summary(
-            status="PASS",
-            statistics={"sequence_type": "ST258", "plugins_executed": list(plugin_results.keys())},
-            details=plugin_results
+            status=final_status,
+            statistics={"plugins_executed": list(plugin_results.keys())},
+            details={"mlst_status": mlst_status, **plugin_results}
         )

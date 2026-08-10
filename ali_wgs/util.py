@@ -30,7 +30,15 @@ ENV = {
     "kleborate": "ali-kleborate",
     "mobsuite": "ali-mobsuite",
     "clinker": "ali-clinker",
-    "iqtree": "ali-iqtree",
+    "iqtree": "ali-phylogeny",
+    "qc": "ali-qc",
+    "species": "ali-species",
+    "typing": "ali-typing",
+    "virulence": "ali-virulence",
+    "phylogeny": "ali-phylogeny",
+    "comparative": "ali-comparative",
+    "defense": "ali-defense",
+    "mge": "ali-mge",
 }
 
 

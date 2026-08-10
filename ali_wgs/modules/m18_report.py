@@ -52,10 +52,10 @@ class FinalReportExportModule(Module):
     ]
 
     def inputs(self):
-        return [self.ctx.run_dir / "M17_STATISTICS_VISUALIZATION" / "04_standardized" / "dashboard_data.json"]
+        return [self.ctx.run_dir / "M17_STATISTICS_VISUALIZATION" / "dashboard_data.json"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "report.html"]
+        return [self.out_dir / "report.html"]
 
     def run(self):
         self.check_inputs()
@@ -67,7 +67,7 @@ class FinalReportExportModule(Module):
             json.dump({"tools_and_databases": self.TOOL_REFERENCES}, fh, indent=2, ensure_ascii=False)
 
         # 2. Render 24-section HTML Report
-        dash_file = run_dir / "M17_STATISTICS_VISUALIZATION" / "04_standardized" / "dashboard_data.json"
+        dash_file = run_dir / "M17_STATISTICS_VISUALIZATION" / "dashboard_data.json"
         dash_data = {}
         if dash_file.exists():
             with open(dash_file, "r", encoding="utf-8") as fh:

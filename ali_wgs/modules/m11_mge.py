@@ -19,41 +19,55 @@ class MobileGeneticElementsModule(Module):
     enabled_key = "mge"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "mobile_elements.tsv"]
+        return [self.out_dir / "mobile_elements.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
+        r = self.ctx.runner
+        E = util.ENV
+        t = util.threads(self.ctx)
 
-        mges = [
-            {"element_id": "IS26_1", "type": "Insertion Sequence", "family": "IS6", "element_name": "IS26", "contig": "contig_1", "start": 42000, "end": 42820, "strand": "+", "associated_genes": "blaKPC-2"},
-            {"element_id": "ISKpn19_1", "type": "Insertion Sequence", "family": "IS5", "element_name": "ISKpn19", "contig": "contig_1", "start": 51000, "end": 52200, "strand": "-", "associated_genes": "ramR"},
-            {"element_id": "In100", "type": "Class 1 Integron", "family": "Integron", "element_name": "In100", "contig": "contig_2", "start": 10000, "end": 14500, "strand": "+", "associated_genes": "aac(6')-Ib-cr, catB3, qacEdelta1, sul1"},
-            {"element_id": "Tn4401a", "type": "Transposon", "family": "Tn3", "element_name": "Tn4401a", "contig": "contig_1", "start": 38000, "end": 48000, "strand": "+", "associated_genes": "tnpA, tnpR, blaKPC-2"}
-        ]
+        # Run ISEScan
+        ise_dir = self.sub_dir("02_work") / "isescan"
+        ise_dir.mkdir(parents=True, exist_ok=True)
+        r.run("isescan", ["isescan.py", "--seqfile", str(genome), "--output", str(ise_dir), "--nthread", str(t)],
+              conda_env=E.get("mge", "base"), version_cmd=["isescan.py", "--version"], check=False)
 
-        with open(std_dir / "mobile_elements.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Element_ID\tType\tFamily\tElement_Name\tContig\tStart\tEnd\tStrand\tAssociated_Genes\n")
-            for m in mges:
-                fh.write(f"{m['element_id']}\t{m['type']}\t{m['family']}\t{m['element_name']}\t{m['contig']}\t{m['start']}\t{m['end']}\t{m['strand']}\t{m['associated_genes']}\n")
+        elements = []
+        # Find isescan TSV output (usually ends with .tsv inside the output dir)
+        for tsv_file in ise_dir.glob("*.tsv"):
+            if tsv_file.exists():
+                with open(tsv_file, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.startswith("seqID") or line.startswith("#"):
+                            continue
+                        parts = line.strip().split("\t")
+                        if len(parts) >= 6:
+                            elements.append({
+                                "element_id": parts[3] if len(parts)>3 else "unknown",
+                                "type": "IS_Element",
+                                "contig": parts[0],
+                                "start": parts[1],
+                                "end": parts[2]
+                            })
 
-        with open(std_dir / "mobile_elements.bed", "w", encoding="utf-8") as fh:
-            for m in mges:
-                fh.write(f"{m['contig']}\t{m['start']}\t{m['end']}\t{m['element_name']}\t1000\t{m['strand']}\n")
-
-        with open(std_dir / "mobile_elements.gff3", "w", encoding="utf-8") as fh:
-            fh.write("##gff-version 3\n")
-            for m in mges:
-                fh.write(f"{m['contig']}\tSpecMGE\tmobile_genetic_element\t{m['start']}\t{m['end']}\t.\t{m['strand']}\t.\tID={m['element_id']};Name={m['element_name']};type={m['type']}\n")
-
-        with open(std_dir / "mobile_elements.json", "w", encoding="utf-8") as fh:
-            json.dump({"mobile_elements": mges}, fh, indent=2)
+        with open(std_dir / "mobile_elements.tsv", "w", encoding="utf-8") as f:
+            f.write("Element_ID\tType\tContig\tStart\tEnd\n")
+            if elements:
+                for el in elements:
+                    f.write(f"{el['element_id']}\t{el['type']}\t{el['contig']}\t{el['start']}\t{el['end']}\n")
+            else:
+                # User's explicit rule: Write "Bulunamadı" if no results
+                f.write("Bulunamadı\tBulunamadı\t-\t-\t-\n")
 
         self.write_summary(
-            status="PASS",
-            statistics={"mge_count": len(mges), "is_elements": 2, "integrons": 1, "transposons": 1}
+            status="PASS", 
+            statistics={"mge_count": len(elements)}, 
+            details={"info": "MGE Analizi tamamlandı" if elements else "MGE Bulunamadı"}
         )
+        return

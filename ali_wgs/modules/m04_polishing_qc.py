@@ -19,17 +19,17 @@ class PolishingGenomeQCModule(Module):
     enabled_key = "assembly_qc"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M03_GENOME_ASSEMBLY" / "04_standardized" / "draft_genome.fasta"]
+        return [self.ctx.run_dir / "M03_GENOME_ASSEMBLY" / "draft_genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "genome.fasta"]
+        return [self.out_dir / "genome.fasta"]
 
     def run(self):
         self.check_inputs()
         E = util.ENV
         t = util.threads(self.ctx)
         r = self.ctx.runner
-        draft = self.ctx.run_dir / "M03_GENOME_ASSEMBLY" / "04_standardized" / "draft_genome.fasta"
+        draft = self.ctx.run_dir / "M03_GENOME_ASSEMBLY" / "draft_genome.fasta"
 
         std_dir = self.sub_dir("04_standardized")
         final_genome = std_dir / "genome.fasta"

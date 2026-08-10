@@ -19,14 +19,14 @@ class PlasmidModule(Module):
     enabled_key = "plasmid"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "plasmids.tsv"]
+        return [self.out_dir / "plasmids.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
         r = self.ctx.runner
         E = util.ENV
@@ -36,30 +36,28 @@ class PlasmidModule(Module):
         r.run("mob_recon", ["mob_recon", "--infile", str(genome), "--outdir", str(mob_dir), "--num_threads", str(t)],
               conda_env=E["mobsuite"], version_cmd=["mob_recon", "--version"], check=False)
 
-        plasmids = [
-            {"plasmid_id": "pKPC-LK3", "rep_type": "IncFII(K)/IncFIB(K)", "relaxase": "MOBP", "mpf_type": "MPFT", "transferability": "Conjugative", "length_bp": 113638, "gc_percent": 53.4, "predicted_host": "Enterobacteriaceae"},
-            {"plasmid_id": "pColRNAI", "rep_type": "ColRNAI", "relaxase": "MOBQ", "mpf_type": "None", "transferability": "Non-mobilizable", "length_bp": 8540, "gc_percent": 50.2, "predicted_host": "Enterobacteriaceae"}
-        ]
+        mob_report = mob_dir / "contig_report.txt"
+        plasmids = []
+        if mob_report.exists():
+            with open(mob_report, "r", encoding="utf-8") as fh:
+                header = fh.readline().strip().split("\t")
+                for line in fh:
+                    parts = line.strip().split("\t")
+                    if len(parts) >= 6 and parts[3] == "plasmid":
+                        plasmids.append({
+                            "contig": parts[0],
+                            "size": parts[1],
+                            "plasmid_id": parts[5] if len(parts) > 5 else "unknown",
+                            "rep_type": parts[6] if len(parts) > 6 else ""
+                        })
 
-        with open(std_dir / "plasmids.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Plasmid_ID\tRep_Type\tRelaxase\tMPF_Type\tTransferability\tLength_bp\tGC_Percent\n")
+        if not plasmids:
+            print("[M10] WARNING: mob_recon found no plasmids or output is missing.")
+
+        with open(std_dir / "plasmids.tsv", "w", encoding="utf-8") as f:
+            f.write("Plasmid_ID\tContig\tSize\tRep_Type\n")
             for p in plasmids:
-                fh.write(f"{p['plasmid_id']}\t{p['rep_type']}\t{p['relaxase']}\t{p['mpf_type']}\t{p['transferability']}\t{p['length_bp']}\t{p['gc_percent']}\n")
+                f.write(f"{p['plasmid_id']}\t{p['contig']}\t{p['size']}\t{p['rep_type']}\n")
 
-        with open(std_dir / "replicons.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Replicon\tPlasmid_ID\tIdentity\n")
-            fh.write("IncFII(K)\tpKPC-LK3\t100.0\n")
-            fh.write("IncFIB(K)\tpKPC-LK3\t99.5\n")
-            fh.write("ColRNAI\tpColRNAI\t100.0\n")
-
-        with open(std_dir / "plasmids.json", "w", encoding="utf-8") as fh:
-            json.dump({"plasmids": plasmids}, fh, indent=2)
-
-        with open(std_dir / "plasmids.fasta", "w", encoding="utf-8") as fh:
-            fh.write(">pKPC-LK3_mock_plasmid\nATGCGATCGATCGATCGATCGATCGATCGATCGATCGATC\n")
-
-        self.write_summary(
-            status="PASS",
-            statistics={"detected_plasmid_count": len(plasmids)},
-            details={"replicons": ["IncFII(K)", "IncFIB(K)", "ColRNAI"]}
-        )
+        self.write_summary(status="PASS" if plasmids else "WARNING", statistics={"plasmid_count": len(plasmids)}, details={"info": "Parsed mob_recon output"})
+        return

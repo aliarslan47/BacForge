@@ -61,8 +61,6 @@ class Orchestrator:
         run_dir = work / run_id
         for sub in RUN_SUBDIRS:
             (run_dir / sub).mkdir(parents=True, exist_ok=True)
-            for sd in ["01_input", "02_work", "03_native_outputs", "04_standardized", "05_statistics", "06_visualization", "07_logs", "08_metadata"]:
-                (run_dir / sub / sd).mkdir(parents=True, exist_ok=True)
 
         manifest = {
             "project_id": run_id,
@@ -106,7 +104,7 @@ Modules M00 to M18 contain standardized JSON/TSV data layer, native tool outputs
 
     def run(self, input_path: str, config_path=None, resume: bool = True) -> RunContext:
         run_dir = self._prepare_run_dir(input_path, config_path)
-        log_dir = run_dir / "M00_INPUT_AUTO_DETECTION" / "07_logs"
+        log_dir = run_dir / "M00_INPUT_AUTO_DETECTION"
         runner = ToolRunner(log_dir)
         ctx = RunContext(self.config, self.resources, run_dir, runner, input_path)
 
@@ -116,8 +114,8 @@ Modules M00 to M18 contain standardized JSON/TSV data layer, native tool outputs
 
         for module_cls in REGISTRY:
             mod = module_cls(ctx)
-            # Update tool runner logs dir to point to current module's 07_logs
-            ctx.runner.logs_dir = mod.sub_dir("07_logs")
+            # Update tool runner logs dir to point to current module's out_dir
+            ctx.runner.logs_dir = mod.out_dir
             tag = f"M{mod.number}_{mod.name}"
 
             if not self._enabled(module_cls):
@@ -146,7 +144,11 @@ Modules M00 to M18 contain standardized JSON/TSV data layer, native tool outputs
                     man["errors"].append(f"M{mod.number}: {exc}")
                     with open(manifest_path, "w", encoding="utf-8") as fh:
                         json.dump(man, fh, indent=2, ensure_ascii=False)
-                raise exc
+                if mod.number in ("00", "03", "04", "06"):
+                    print(f"   [{tag}] kritik modül hatası, işlem durduruluyor.")
+                    raise exc
+                else:
+                    print(f"   [{tag}] kritik olmayan modül hatası, atlanıyor...")
 
         print(f"== Analiz Başarıyla Tamamlandı. Çıktı: {run_dir}")
         return ctx

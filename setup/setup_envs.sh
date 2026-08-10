@@ -24,11 +24,21 @@ mk ali-illumina-qc fastqc fastp                            # 03,04 (Illumina)
 # --- assembly ---
 mk ali-flye      flye                                      # 05 ONT/Hybrid/faj
 mk ali-medaka    medaka                                    # 05 ONT polishing
-mk ali-assembly-sr spades skesa unicycler                  # 05 Illumina
+mk ali-assembly-sr spades skesa unicycler polypolish       # 05 Illumina
 mk ali-hifiasm   hifiasm                                   # 05 HiFi
 # --- QC / sınıflandırma ---
 mk ali-quast     quast                                     # 06
+mk ali-qc        multiqc bracken kraken2                   # general qc
 mk ali-genomad   genomad                                   # 08 içerik router
+mk ali-species   fastani mash
+mk ali-typing    mlst snippy
+mk ali-virulence abricate
+mk ali-phylogeny iqtree
+mk ali-comparative panaroo
+mk ali-defense   defense-finder
+mk ali-mge       isescan integron_finder
+mk ali-mobsuite  mob_suite
+mk ali-clinker   clinker
 # --- annotation (sınıfa göre) ---
 mk ali-bakta     bakta                                     # 10 bakteri/arkea
 mk ali-pharokka  pharokka                                  # 10 faj

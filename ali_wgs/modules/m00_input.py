@@ -30,7 +30,7 @@ class InputDetectionModule(Module):
         return [self.ctx.input_path]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "data_type.json"]
+        return [self.out_dir / "data_type.json"]
 
     def run(self):
         self.check_inputs()

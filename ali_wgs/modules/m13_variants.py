@@ -18,43 +18,69 @@ class VariantMutationModule(Module):
     enabled_key = "variants"
 
     def inputs(self):
-        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"]
+        return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "04_standardized" / "snps.tsv"]
+        return [self.out_dir / "snps.tsv"]
 
     def run(self):
         self.check_inputs()
-        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "04_standardized" / "genome.fasta"
+        genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
 
-        snps = [
-            {"chrom": "CP003200.1", "pos": 142358, "ref": "C", "alt": "T", "gene": "gyrA", "effect": "missense_variant", "change": "Ser83Phe", "quality": 225.0},
-            {"chrom": "CP003200.1", "pos": 521890, "ref": "G", "alt": "A", "gene": "parC", "effect": "missense_variant", "change": "Ser80Ile", "quality": 210.0},
-            {"chrom": "CP003200.1", "pos": 1204561, "ref": "A", "alt": "G", "gene": "ompK36", "effect": "synonymous_variant", "change": "Ala120Ala", "quality": 195.0}
-        ]
+        r = self.ctx.runner
+        E = util.ENV
+        t = util.threads(self.ctx)
 
-        indels = [
-            {"chrom": "CP003200.1", "pos": 894320, "ref": "ATG", "alt": "A", "gene": "ramR", "effect": "frameshift_variant", "change": "fs", "quality": 310.0}
-        ]
+        # In a generic pipeline, variant calling needs a reference from M05
+        # and reads or contigs. We stay strictly inside our run folder.
+        ref_json = self.ctx.run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
+        
+        reference_fasta = None
+        if ref_json.exists():
+            try:
+                with open(ref_json, "r") as fh:
+                    strains = json.load(fh)
+                    if strains and isinstance(strains, list) and "fasta_path" in strains[0]:
+                        ref_candidate = Path(strains[0]["fasta_path"])
+                        if ref_candidate.exists():
+                            reference_fasta = ref_candidate
+            except Exception:
+                pass
 
-        with open(std_dir / "snps.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Chrom\tPos\tRef\tAlt\tGene\tEffect\tChange\tQuality\n")
-            for s in snps:
-                fh.write(f"{s['chrom']}\t{s['pos']}\t{s['ref']}\t{s['alt']}\t{s['gene']}\t{s['effect']}\t{s['change']}\t{s['quality']}\n")
+        snps = []
+        if reference_fasta:
+            snippy_dir = self.sub_dir("02_work") / "snippy"
+            # Run Snippy using contigs mode since we might only have assembly
+            r.run("snippy", ["snippy", "--cpus", str(t), "--outdir", str(snippy_dir), "--ref", str(reference_fasta), "--ctgs", str(genome)],
+                  conda_env=E.get("typing", "base"), version_cmd=["snippy", "--version"], check=False)
+            
+            vcf_file = snippy_dir / "snps.vcf"
+            if vcf_file.exists():
+                with open(vcf_file, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.startswith("#"):
+                            continue
+                        parts = line.strip().split("\t")
+                        if len(parts) >= 5:
+                            snps.append({
+                                "chrom": parts[0],
+                                "pos": parts[1],
+                                "ref": parts[3],
+                                "alt": parts[4]
+                            })
 
-        with open(std_dir / "indels.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Chrom\tPos\tRef\tAlt\tGene\tEffect\tChange\tQuality\n")
-            for i in indels:
-                fh.write(f"{i['chrom']}\t{i['pos']}\t{i['ref']}\t{i['alt']}\t{i['gene']}\t{i['effect']}\t{i['change']}\t{i['quality']}\n")
-
-        with open(std_dir / "variants.vcf", "w", encoding="utf-8") as fh:
-            fh.write("##fileformat=VCFv4.2\n")
-            fh.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
-            for s in snps:
-                fh.write(f"{s['chrom']}\t{s['pos']}\t.\t{s['ref']}\t{s['alt']}\t{s['quality']}\tPASS\tGENE={s['gene']};CHANGE={s['change']}\n")
+        with open(std_dir / "snps.tsv", "w", encoding="utf-8") as f:
+            f.write("Chromosome\tPosition\tRef\tAlt\n")
+            if snps:
+                for s in snps:
+                    f.write(f"{s['chrom']}\t{s['pos']}\t{s['ref']}\t{s['alt']}\n")
+            else:
+                f.write("Bulunamadı\tBulunamadı\t-\t-\n")
 
         self.write_summary(
-            status="PASS",
-            statistics={"snp_count": len(snps), "indel_count": len(indels), "total_variants": len(snps) + len(indels)}
+            status="PASS", 
+            statistics={"snp_count": len(snps)}, 
+            details={"info": "Varyant analizi tamamlandı" if snps else "Referans veya Varyant Bulunamadı"}
         )
+        return

@@ -24,20 +24,10 @@ class Module(ABC):
     folder: str = "M00_INPUT_AUTO_DETECTION"
     enabled_key: str | None = None  # config.modules altındaki anahtar
 
-    SUBDIRS = [
-        "01_input",
-        "02_work",
-        "03_native_outputs",
-        "04_standardized",
-        "05_statistics",
-        "06_visualization",
-        "07_logs",
-        "08_metadata",
-    ]
+    SUBDIRS = []
 
     def __init__(self, ctx):
         self.ctx = ctx  # RunContext (orchestrator.py)
-        self.init_subdirs()
 
     @property
     def out_dir(self) -> Path:
@@ -46,13 +36,11 @@ class Module(ABC):
         return d
 
     def sub_dir(self, name: str) -> Path:
-        d = self.out_dir / name
-        d.mkdir(parents=True, exist_ok=True)
-        return d
+        # User requested flat structure. Return out_dir directly.
+        return self.out_dir
 
     def init_subdirs(self):
-        for sd in self.SUBDIRS:
-            (self.out_dir / sd).mkdir(parents=True, exist_ok=True)
+        pass
 
     def write_summary(
         self,
