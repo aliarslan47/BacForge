@@ -1,0 +1,106 @@
+"""M01 -- Read QC & Preprocessing
+Short-read QC (fastp / FastQC / MultiQC) -> clean_R1.fastq.gz, clean_R2.fastq.gz
+Long-read QC (NanoPlot / Filtlong) -> filtered_long.fastq.gz
+Hybrid QC (both short & long branches)
+Assembly input -> SKIPPED
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from .base import Module
+from .. import util
+
+
+class ReadQCModule(Module):
+    number = "01"
+    name = "read_qc_preprocessing"
+    folder = "M01_READ_QC_PREPROCESSING"
+    enabled_key = "qc"
+
+    def inputs(self):
+        return [self.ctx.run_dir / "M00_INPUT_AUTO_DETECTION" / "04_standardized" / "data_type.json"]
+
+    def outputs(self):
+        return [self.out_dir / "M01_summary.json"]
+
+    def run(self):
+        self.check_inputs()
+        data_type = self.ctx.detection.get("data_type", "SHORT_READ")
+        E = util.ENV
+        t = util.threads(self.ctx)
+        r = self.ctx.runner
+        inp = Path(self.ctx.input_path)
+
+        std_dir = self.sub_dir("04_standardized")
+        stats = {}
+
+        if data_type == "ASSEMBLY_INPUT":
+            self.write_summary(status="SKIPPED", details={"reason": "Input is FASTA assembly; read QC skipped."})
+            return
+
+        # 1. SHORT READ / HYBRID Branch
+        if data_type in ("SHORT_READ", "HYBRID"):
+            r1, r2 = None, None
+            if inp.is_dir():
+                files = sorted(list(inp.glob("*.fastq*")) + list(inp.glob("*.fq*")))
+                for f in files:
+                    if "_R1" in f.name or "_1." in f.name:
+                        r1 = f
+                    elif "_R2" in f.name or "_2." in f.name:
+                        r2 = f
+            elif inp.is_file():
+                r1 = inp
+
+            clean_r1 = self.sub_dir("04_standardized") / "clean_R1.fastq.gz"
+            clean_r2 = self.sub_dir("04_standardized") / "clean_R2.fastq.gz"
+
+            if r1 and r2:
+                cmd = [
+                    "fastp", "-i", str(r1), "-I", str(r2),
+                    "-o", str(clean_r1), "-O", str(clean_r2),
+                    "-h", str(self.sub_dir("06_visualization") / "fastp_report.html"),
+                    "-j", str(self.sub_dir("04_standardized") / "fastp.json"),
+                    "-w", str(t)
+                ]
+                r.run("fastp", cmd, conda_env=E["illumina_qc"], version_cmd=["fastp", "--version"])
+                stats["short_read_qc"] = "COMPLETED"
+            elif r1:
+                cmd = [
+                    "fastp", "-i", str(r1), "-o", str(clean_r1),
+                    "-h", str(self.sub_dir("06_visualization") / "fastp_report.html"),
+                    "-j", str(self.sub_dir("04_standardized") / "fastp.json"),
+                    "-w", str(t)
+                ]
+                r.run("fastp", cmd, conda_env=E["illumina_qc"], version_cmd=["fastp", "--version"])
+                stats["short_read_qc"] = "COMPLETED"
+
+        # 2. LONG READ / HYBRID Branch
+        if data_type in ("LONG_READ", "HYBRID"):
+            long_fq = None
+            if inp.is_dir():
+                for f in inp.glob("*"):
+                    if any(k in f.name.lower() for k in ["long", "ont", "nanopore", "fastq", "fq"]):
+                        long_fq = f
+                        break
+            elif inp.is_file():
+                long_fq = inp
+
+            filtered_long = self.sub_dir("04_standardized") / "filtered_long.fastq.gz"
+
+            if long_fq and long_fq.exists():
+                cfg_filt = self.ctx.config.get("tools", {}).get("filtlong", {})
+                min_len = cfg_filt.get("min_length", 1000)
+                keep_pct = cfg_filt.get("keep_percent", 95)
+                cmd = ["filtlong", f"--min_length={min_len}", f"--keep_percent={keep_pct}", str(long_fq)]
+                r.run("filtlong", cmd, conda_env=E["ont_qc"], version_cmd=["filtlong", "--version"], stdout_path=str(filtered_long))
+                stats["long_read_qc"] = "COMPLETED"
+
+        # Write summary TSV
+        with open(std_dir / "qc_statistics.tsv", "w", encoding="utf-8") as fh:
+            fh.write("Metric\tValue\n")
+            for k, v in stats.items():
+                fh.write(f"{k}\t{v}\n")
+
+        self.write_summary(status="PASS", statistics=stats)

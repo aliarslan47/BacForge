@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity -- Bacterial WGS Bioinformatics Analysis Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-accent: rgba(56, 189, 248, 0.3);
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.25);
+            --secondary: #818cf8;
+            --accent-rose: #fb7185;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #ffffff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tag {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border-accent);
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--border-accent);
+        }
+
+        main {
+            flex: 1;
+            padding: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stat Grid */
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 18px;
+        }
+        .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .stat-value { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .stat-sub { font-size: 12px; color: var(--accent-emerald); margin-top: 4px; }
+
+        /* Tables */
+        .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .custom-table th { background: rgba(15, 23, 42, 0.8); color: var(--primary); font-size: 12px; font-weight: 600; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid var(--border-glass); }
+        .custom-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-glass); font-size: 13px; color: var(--text-main); }
+        .custom-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-pass { background: rgba(52, 211, 153, 0.15); color: var(--accent-emerald); border: 1px solid rgba(52, 211, 153, 0.3); }
+        .badge-warn { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); border: 1px solid rgba(251, 191, 36, 0.3); }
+
+        /* Form Inputs */
+        .input-group { margin-bottom: 18px; }
+        .input-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
+        .text-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-family: var(--font-code);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .text-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #0f172a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); }
+
+        /* Stepper */
+        .stepper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+        .step-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-glass);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step-item.done { border-color: var(--accent-emerald); color: var(--accent-emerald); }
+
+        /* Synteny Canvas mockup */
+        .synteny-container { background: #0f172a; border-radius: 8px; padding: 20px; border: 1px solid var(--border-glass); }
+        .synteny-track { display: flex; align-items: center; margin: 12px 0; gap: 12px; }
+        .track-name { width: 180px; font-weight: 600; font-size: 13px; color: var(--primary); }
+        .gene-block { padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #0f172a; }
+        .bg-kpc { background: #f43f5e; color: #fff; }
+        .bg-is { background: #fbbf24; }
+        .bg-tem { background: #a855f7; color: #fff; }
+        .bg-aac { background: #34d399; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-logo">AG</div>
+            <div>
+                <div class="brand-title">Antigravity Bacterial WGS Platform</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Antigravity Technical Spec v1.0 Compliant</div>
+            </div>
+            <span class="brand-tag">v1.0.0</span>
+        </div>
+        <nav>
+            <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dashboard & Runs</button>
+            <button class="nav-btn" onclick="switchTab('submit')">🚀 New Analysis</button>
+            <button class="nav-btn" onclick="switchTab('inspector')">🔬 Results Inspector</button>
+            <button class="nav-btn" onclick="switchTab('export')">📦 Data Export</button>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-label">System Resources</div>
+                    <div class="stat-value">15 Cores / 48 GB</div>
+                    <div class="stat-sub">Aggressive Execution Profile</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Platform Routing</div>
+                    <div class="stat-value">Automated M00</div>
+                    <div class="stat-sub">Short / Long / Hybrid / FASTA</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Annotation Integrity</div>
+                    <div class="stat-value">Decoupled</div>
+                    <div class="stat-sub">locus_tag != gene_symbol enforced</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Top NCBI Reference Match</div>
+                    <div class="stat-value">Top 5 ANI</div>
+                    <div class="stat-sub">FastANI + Mash Sketch</div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">Recent Bacterial WGS Runs</div>
+                    <button class="btn-primary" style="padding: 6px 14px; font-size: 12px;" onclick="loadRuns()">Refresh Runs</button>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Run / Project ID</th>
+                            <th>Input Path</th>
+                            <th>Data Type</th>
+                            <th>Platform</th>
+                            <th>Started At</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="runs-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-muted);">Loading runs...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: SUBMIT SAMPLE -->
+        <div id="tab-submit" class="tab-content">
+            <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+                <div class="card-header">
+                    <div class="card-title">Submit Sample for Bacterial WGS Analysis</div>
+                </div>
+                <form id="sample-form" onsubmit="submitAnalysis(event)">
+                    <div class="input-group">
+                        <label class="input-label">Server Input Path (FASTQ / FASTA / Folder)</label>
+                        <input type="text" id="input-path" class="text-input" placeholder="/home/ali/test_data/bacteria_ecoli_k12/ecoli_k12_mg1655.fna" required>
+                    </div>
+
+                    <div style="margin-bottom: 20px; display: flex; gap: 12px;">
+                        <button type="button" class="nav-btn" style="border: 1px solid var(--border-accent);" onclick="detectInput()">🔍 Auto-Detect M00 Input</button>
+                    </div>
+
+                    <div id="detection-preview" style="display: none; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-glass); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                        <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">M00 Automatic Data Detection Preview</div>
+                        <div id="detection-details" style="font-family: var(--font-code); font-size: 12px; color: var(--text-muted);"></div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%;">Start Automated M00-M18 Analysis</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 3: INSPECTOR -->
+        <div id="tab-inspector" class="tab-content">
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">M00--M18 Pipeline Execution Progress</div>
+                    <span id="current-run-tag" class="badge badge-pass">Run: Active</span>
+                </div>
+                <div class="stepper" id="pipeline-stepper">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">M05 NCBI Closest-5 Reference Strains</div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Organism Name</th>
+                            <th>Strain</th>
+                            <th>Assembly Accession</th>
+                            <th>ANI %</th>
+                            <th>Query Coverage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="closest5-tbody">
+                        <tr><td>#1</td><td>Klebsiella pneumoniae</td><td>HS11286</td><td>GCF_000240185.1</td><td>99.85%</td><td>98.60%</td></tr>
+                        <tr><td>#2</td><td>Klebsiella pneumoniae</td><td>NTUH-K2044</td><td>GCF_000009885.1</td><td>99.72%</td><td>97.90%</td></tr>
+                        <tr><td>#3</td><td>Klebsiella pneumoniae</td><td>MGH 78578</td><td>GCF_000016305.1</td><td>99.64%</td><td>97.45%</td></tr>
+                        <tr><td>#4</td><td>Klebsiella pneumoniae</td><td>KPNIH1</td><td>GCF_000696375.1</td><td>99.58%</td><td>96.80%</td></tr>
+                        <tr><td>#5</td><td>Klebsiella pneumoniae</td><td>NJST258_1</td><td>GCF_000583215.1</td><td>99.41%</td><td>96.10%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">M14 Clinker Comparative Gene Cluster Synteny Viewer (blaKPC-2)</div>
+                    <span style="font-size: 11px; color: var(--text-muted);">DOI: 10.1093/bioinformatics/btab007</span>
+                </div>
+                <div class="synteny-container">
+                    <div class="synteny-track">
+                        <div class="track-name">Query Genome</div>
+                        <div class="gene-block bg-is">IS26</div>
+                        <div class="gene-block bg-kpc">blaKPC-2</div>
+                        <div class="gene-block bg-tem">blaTEM-1</div>
+                        <div class="gene-block bg-aac">aac(6')-Ib-cr</div>
+                    </div>
+                    <div class="synteny-track">
+                        <div class="track-name">NCBI #1 (HS11286)</div>
+                        <div class="gene-block bg-is">IS26</div>
+                        <div class="gene-block bg-kpc">blaKPC-2</div>
+                        <div class="gene-block bg-tem">blaTEM-1</div>
+                        <div class="gene-block bg-aac">aac(6')-Ib-cr</div>
+                    </div>
+                    <div class="synteny-track">
+                        <div class="track-name">NCBI #2 (NTUH-K2044)</div>
+                        <div class="gene-block bg-is">IS26</div>
+                        <div class="gene-block bg-kpc">blaKPC-2</div>
+                        <div class="gene-block bg-tem">blaTEM-1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">M08 Antimicrobial Resistance (AMR) & Virulence Profile</div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr><th>Gene Symbol</th><th>Type</th><th>Drug Class / Category</th><th>Identity</th><th>Coverage</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>blaKPC-2</strong></td><td>AMR</td><td>CARBAPENEM</td><td>100.0%</td><td>100.0%</td></tr>
+                        <tr><td><strong>blaTEM-1</strong></td><td>AMR</td><td>BETA-LACTAM</td><td>100.0%</td><td>100.0%</td></tr>
+                        <tr><td><strong>aac(6')-Ib-cr</strong></td><td>AMR</td><td>AMINOGLYCOSIDE</td><td>99.8%</td><td>100.0%</td></tr>
+                        <tr><td><strong>ybtA</strong></td><td>Virulence</td><td>Iron Acquisition (Yersiniabactin)</td><td>100.0%</td><td>100.0%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: EXPORT -->
+        <div id="tab-export" class="tab-content">
+            <div class="glass-card">
+                <div class="card-header">
+                    <div class="card-title">Complete Project Data & Standalone Export Center</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div class="stat-card">
+                        <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">Complete Project Archive</div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Download full PROJECT_COMPLETE.zip containing native tool outputs and standardized data layer.</div>
+                        <button class="btn-primary" onclick="exportData('zip')">Download ZIP</button>
+                    </div>
+                    <div class="stat-card">
+                        <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">Interactive HTML Report</div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">24 structured report sections with official tool DOIs and scientific references.</div>
+                        <button class="btn-primary" onclick="exportData('html')">Download HTML</button>
+                    </div>
+                    <div class="stat-card">
+                        <div style="font-weight: 600; color: var(--primary); margin-bottom: 8px;">Canonical Genome FASTA</div>
+                        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Polished genome assembly file ready for downstream analysis.</div>
+                        <button class="btn-primary" onclick="exportData('fasta')">Download FASTA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let currentRunId = null;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function loadRuns() {
+            try {
+                const res = await fetch('/api/runs');
+                const data = await res.json();
+                const tbody = document.getElementById('runs-tbody');
+                tbody.innerHTML = '';
+
+                if (!data.runs || data.runs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No analysis runs found.</td></tr>';
+                    return;
+                }
+
+                data.runs.forEach(r => {
+                    if (!currentRunId) currentRunId = r.run_id;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${r.run_id}</strong></td>
+                            <td style="font-family:var(--font-code); font-size:11px;">${r.input_path}</td>
+                            <td><span class="badge badge-pass">${r.detected_data_type || 'SHORT_READ'}</span></td>
+                            <td>${r.detected_platform || 'Illumina'}</td>
+                            <td>${r.started_at || 'N/A'}</td>
+                            <td><span class="badge badge-pass">${r.status}</span></td>
+                            <td><button class="btn-primary" style="padding:4px 10px; font-size:11px;" onclick="inspectRun('${r.run_id}')">Inspect</button></td>
+                        </tr>
+                    `;
+                });
+                renderStepper();
+            } catch (err) {
+                console.error("Error loading runs:", err);
+            }
+        }
+
+        async function detectInput() {
+            const inputPath = document.getElementById('input-path').value;
+            if (!inputPath) return alert("Please enter input path first");
+            const formData = new FormData();
+            formData.append('input_path', inputPath);
+
+            try {
+                const res = await fetch('/api/detect', { method: 'POST', body: formData });
+                const data = await res.json();
+                document.getElementById('detection-preview').style.display = 'block';
+                document.getElementById('detection-details').innerText = JSON.stringify(data, null, 2);
+            } catch (err) {
+                alert("Detection error: " + err);
+            }
+        }
+
+        async function submitAnalysis(e) {
+            e.preventDefault();
+            const inputPath = document.getElementById('input-path').value;
+            const formData = new FormData();
+            formData.append('input_path', inputPath);
+
+            try {
+                const res = await fetch('/api/submit', { method: 'POST', body: formData });
+                const data = await res.json();
+                alert("Analysis started successfully!");
+                switchTab('dashboard');
+                loadRuns();
+            } catch (err) {
+                alert("Submission error: " + err);
+            }
+        }
+
+        function inspectRun(runId) {
+            currentRunId = runId;
+            document.getElementById('current-run-tag').innerText = "Run: " + runId;
+            switchTab('inspector');
+            renderStepper();
+        }
+
+        function renderStepper() {
+            const stepper = document.getElementById('pipeline-stepper');
+            const modules = ["M00 Input", "M01 Read QC", "M02 Tax QC", "M03 Assembly", "M04 Genome QC", "M05 Species/Ref", "M06 Annotation", "M07 Typing", "M08 AMR", "M09 Virulence", "M10 Plasmid", "M11 MGE", "M12 Phage/CRISPR", "M13 Variants", "M14 Context", "M15 Comparative", "M16 Phylogeny", "M17 Stats", "M18 Report"];
+            stepper.innerHTML = '';
+            modules.forEach(m => {
+                stepper.innerHTML += `<div class="step-item done">✓ ${m}</div>`;
+            });
+        }
+
+        function exportData(type) {
+            if (!currentRunId) return alert("Select a run to export data");
+            window.open(`/api/export/${currentRunId}/${type}`, '_blank');
+        }
+
+        // Initial load
+        loadRuns();
+    </script>
+</body>
+</html>

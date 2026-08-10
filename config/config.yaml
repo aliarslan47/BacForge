@@ -1,0 +1,118 @@
+# =====================================================================
+# Ali WGS Pipeline — Merkezi Yapılandırma
+# KURAL: Kodda mutlak yol YOK. Her şey buradan / ortam değişkeninden okunur.
+# Ortam değişkenleri (taşınabilirlik): ALI_WGS_HOME, ALI_WGS_DB, ALI_WGS_WORK
+# =====================================================================
+
+project:
+  name: "Ali WGS Pipeline"
+  version: "0.1.0-mvp"
+
+# --- Yollar: ${VAR} ortam değişkeninden çözülür; taşınınca SADECE bunlar değişir ---
+paths:
+  home: "${ALI_WGS_HOME}"          # proje kök dizini
+  db:   "${ALI_WGS_DB}"            # büyük veritabanları (koddan ayrı)
+  work: "${ALI_WGS_WORK}"          # çıktı/çalışma dizini (run'lar buraya)
+
+# --- Donanım: RUNTIME'da otomatik tespit + AGRESİF kullanım ---
+# KURAL: Kaynak sabit yazılmaz. Her çalıştırmada nproc + free ile tespit edilir,
+#        böylece başka PC'ye taşıyınca o makinenin gücüne göre kendini ayarlar.
+# POLİTİKA: Düşük kullanım YOK. Çekirdeğin neredeyse tamamı + RAM'in ~%90'ı kullanılır.
+resources:
+  mode: "auto"                      # başlangıçta nproc/free ile tespit et
+  profile: "aggressive"             # hız önceliği: yüksek/yükseğe-yakın kullanım
+  reserve_cores: 1                  # sisteme yalnızca 1 çekirdek bırak (agresif)
+  reserve_memory_gb: 4              # OS için minimum pay
+  thread_fraction: 1.0              # (toplam - reserve) çekirdeğin %100'ü araçlara
+  memory_fraction: 0.90             # RAM'in %90'ına kadar
+  oversubscribe: false              # hyperthread yoksa çekirdek sayısını aşma
+  tmp_dir: "${ALI_WGS_WORK}/tmp"
+  # Bu makinede tespit edilen örnek değerler (her run'da yeniden hesaplanır):
+  detected:
+    cores: 16                       # -> kullanılacak thread: 15 (16 - 1 reserve)
+    ram_gb: 54                      # -> kullanılacak bellek: ~48 GB (%90 ~ -reserve)
+  # Tek örnek varsa: assembler/annotation TÜM thread'leri alır (hız).
+  # Çok örnek varsa: örnekler arası paralellik + araç içi thread dengelenir.
+  scheduling: "fill"                # boş çekirdek bırakma; iş kuyruğunu doldur
+
+# --- Otomatik platform tespiti eşikleri (FAZ 3'te literatürle kesinleşecek) ---
+input_detection:
+  long_read_min_n50: 1000           # N50 > 1kb => long-read aday
+  short_read_max_len: 350           # ortalama <=350bp => short-read
+  hifi_min_qual: 25                 # Q>=25 + uzun => HiFi aday
+  paired_tokens: ["_R1", "_R2", "_1.", "_2."]
+
+# --- İçerik-farkında otomatik yönlendirme ---
+# Kullanıcı seçim yapmaz. Assembly sonrası geNomad her contig'i sınıflandırır:
+#   chromosome (bakteri/arkea) | plasmid | virus(faj)
+# Annotation/Completeness/Taxonomy bu sınıfa göre OTOMATİK dallanır.
+routing:
+  classifier: "genomad"            # virüs/plazmid/kromozom ayrımı (Camargo 2024, Nat Biotechnol)
+  fallback_size_kb: 500            # geNomad yoksa: assembly <500kb + tek contig -> faj adayı
+  on_unknown: "annotate_generic"   # tanımsız -> Bakta(generic) + uyarı; ASLA sessiz kırılma
+
+# --- Spec modül anahtarları (M00 -- M18) ---
+modules:
+  input_detection:        true     # M00
+  qc:                     true     # M01
+  taxonomy:               true     # M02
+  assembly:               true     # M03
+  assembly_qc:            true     # M04
+  ani:                    true     # M05
+  annotation:             true     # M06
+  mlst:                   true     # M07
+  amr:                    true     # M08
+  vfdb:                   true     # M09
+  plasmid:                true     # M10
+  mge:                    true     # M11
+  genomad:                true     # M12
+  variants:               true     # M13
+  clinker:                true     # M14
+  comparative:            true     # M15
+  phylogeny:              true     # M16
+  stats:                  true     # M17
+  report:                 true     # M18
+
+# --- Araç başına parametreler (her biri literatürle gerekçeli — docs/literature) ---
+tools:
+  flye:        { extra: "--asm-coverage 50" }       # ONT/PacBio
+  medaka:      { model: "auto" }                    # ONT polishing
+  skesa:       { }                                  # Illumina (güvenli, hızlı)
+  spades:      { mode: "--isolate" }                # Illumina alternatif
+  hifiasm:     { }                                  # PacBio HiFi
+  filtlong:    { min_length: 1000, keep_percent: 95 }
+  chopper:     { quality: 10, minlength: 200 }      # faj okumaları kısa olabilir
+  fastp:       { }                                  # Illumina QC+trim
+  # Faj/küçük genomda aşırı coverage assembly'yi bozar -> hedef coverage'a düşür
+  subsample:   { enabled: "auto", target_coverage: 100, tool: "rasusa" }
+  # --- annotation (sınıfa göre otomatik) ---
+  bakta:       { db_type: "light" }                 # bakteri/arkea
+  pharokka:    { }                                  # faj (Bouras 2023, Bioinformatics)
+  # --- completeness (sınıfa göre otomatik) ---
+  checkm2:     { }                                  # bakteri/arkea
+  checkv:      { }                                  # faj/virüs (Nayfach 2021, Nat Biotechnol)
+  # --- ortak ---
+  amrfinder:   { plus: true }                       # --plus: virülans+stres (bakteri+faj)
+  genomad:     { }                                  # içerik sınıflandırıcı (router)
+  quast:       { }
+  # Local hızlı BLAST = genel bakış (tüm viral contig). KESİN kimlik için yayına uygun
+  # contig'lere NCBI core_nt'ye REMOTE BLAST yapılır (aşağıda ncbi_blast). 68GB indirme YOK.
+  blastn:      { db: "blast_viral/ref_viruses_rep_genomes", evalue: 1e-10, max_target_seqs: 5 }
+  # Yayına uygun (🟢) contig'ler için online (remote) BLAST -> tam core_nt doğruluğu
+  # timeout_sec: TEK deneme, cevap gelmezse geç (uzun bekleme yok). Başarılılar ~7 dk'da döner;
+  # jumbo/yanıtsız contig 900s'te (15 dk) kesilir ve diğerlerine geçilir, bloke etmez.
+  ncbi_blast:  { enabled: true, db: "core_nt", entrez: "viruses[organism]", max_target_seqs: 10, timeout_sec: 900 }
+
+# --- Literatür-temelli contig filtreleme (Modül 07) ---
+# Gerekçe: docs/literature/07_contig_filtering.md
+contig_filter:
+  min_length: 1000        # bp; <1kb contig'ler düşük güvenilirlik (assembly QC standardı)
+  min_coverage_abs: 3     # mutlak taban; <3x = olası artefakt/kontaminasyon
+  min_coverage_frac: 0.10 # medyan coverage'ın %10'undan düşük -> ele
+  apply_coverage: true    # coverage bilgisi varsa (Flye) uygula
+
+# --- Veritabanı sürümleri (rapora otomatik yazılır; ALI_WGS_DB altında) ---
+databases:
+  bakta:     { path: "${ALI_WGS_DB}/bakta/db-light",  version: "TBD" }
+  amrfinder: { path: "${ALI_WGS_DB}/amrfinderplus",   version: "TBD" }
+  checkm2:   { path: "${ALI_WGS_DB}/checkm2",         version: "TBD" }

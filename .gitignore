@@ -1,0 +1,14 @@
+# Çalışma çıktıları & veritabanları (koddan ayrı tutulur — taşınabilirlik kuralı)
+runs/
+databases/
+*.log
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+build/
+dist/
+# Ortam
+.env
+test_data/
