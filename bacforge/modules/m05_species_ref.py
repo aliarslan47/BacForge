@@ -32,6 +32,7 @@ class SpeciesReferenceIdentificationModule(Module):
 
     BLAST_TIMEOUT = 3600              # DAIMA BLAST + sonucu bekle (16S fallback YOK). Uzun bekleme guvenlik siniri.
     MAX_REFS_FETCH = 60               # kesfedilen turden cekilecek tam genom ust siniri
+    BLAST_MAX_CONTIG_BP = 1_000_000   # remote nt BLAST icin contig ust siniri (>1Mb remote'ta takilir/timeout)
 
     def inputs(self):
         return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
@@ -60,13 +61,64 @@ class SpeciesReferenceIdentificationModule(Module):
         except Exception:
             pass
 
-    def _longest_contig(self, genome: Path, out: Path) -> int:
+    @staticmethod
+    def _safe_name(name: str) -> str:
+        """Contig id'sini dosya-guvenli hale getir (yol ayraclari vs. -> _)."""
+        return re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("_") or "contig"
+
+    def _export_per_contig(self, genome: Path, contigs_dir: Path, std_dir: Path) -> list[tuple[str, int]]:
+        """Her contig'i AYRI FASTA olarak `contigs_dir` altina yazar (manuel BLAST icin) +
+        contig uzunluk tablosunu (`contig_lengths.tsv`) std_dir'e yazar. Toplu genome.fasta'ya DOKUNULMAZ.
+        Doner: (contig_id, uzunluk) listesi, uzunluga gore azalan."""
+        seqs = util.read_fasta(genome)
+        lengths = sorted(((n, len(s)) for n, s in seqs.items()), key=lambda x: x[1], reverse=True)
+        contigs_dir.mkdir(parents=True, exist_ok=True)
+        used = {}
+        index_rows = []
+        for rank, (name, L) in enumerate(lengths, 1):
+            base = self._safe_name(name)
+            fn = base
+            if fn in used:  # cakisma olursa benzersizlestir
+                used[fn] += 1
+                fn = f"{base}__{used[fn]}"
+            else:
+                used[fn] = 0
+            fa = contigs_dir / f"{fn}.fasta"
+            fa.write_text(f">{name}\n{seqs[name]}\n", encoding="utf-8")
+            index_rows.append((rank, name, L, fa.name, "yes" if L < self.BLAST_MAX_CONTIG_BP else "no (>1Mb)"))
+        # uzunluk tablosu (std_dir'e; rapora tasinabilir)
+        with open(std_dir / "contig_lengths.tsv", "w", encoding="utf-8") as fh:
+            fh.write("Rank\tContig\tLength_bp\tPer_contig_fasta\tBLAST_eligible_lt1Mb\n")
+            for rank, name, L, fn, elig in index_rows:
+                fh.write(f"{rank}\t{name}\t{L}\t{fn}\t{elig}\n")
+        # klasore kullanim notu
+        (contigs_dir / "README.txt").write_text(
+            "Her contig ayri FASTA (manuel/dogrulama BLAST icin). Toplu dizi: "
+            "../../M04_POLISHING_GENOME_QC/genome.fasta (degistirilmez).\n"
+            "Ornek manuel BLAST:\n"
+            "  conda run -n ali-blast blastn -query <contig>.fasta -db nt -remote \\\n"
+            "    -outfmt '6 sacc pident length evalue bitscore staxids sscinames stitle' -max_target_seqs 5\n"
+            f"Not: >{self.BLAST_MAX_CONTIG_BP} bp contig'ler remote nt BLAST'ta takilabilir.\n",
+            encoding="utf-8")
+        return [(name, L) for _, name, L, _, _ in index_rows]
+
+    def _pick_blast_contig(self, genome: Path, out: Path) -> tuple[str | None, int, bool]:
+        """Remote BLAST icin contig sec: 1Mb ALTINDAKI en uzun contig (>1Mb remote'ta takilir).
+        1Mb alti hic yoksa en uzun contig'in ilk 1Mb'lik parcasini kullan (truncate).
+        Doner: (contig_id, kullanilan_uzunluk, truncated?)."""
         seqs = util.read_fasta(genome)
         if not seqs:
-            return 0
+            return None, 0, False
+        eligible = {n: s for n, s in seqs.items() if len(s) < self.BLAST_MAX_CONTIG_BP}
+        if eligible:
+            name = max(eligible, key=lambda k: len(eligible[k]))
+            out.write_text(f">{name}\n{seqs[name]}\n", encoding="utf-8")
+            return name, len(seqs[name]), False
+        # hepsi >=1Mb: en uzunu al, ilk 1Mb'i BLAST'la
         name = max(seqs, key=lambda k: len(seqs[k]))
-        out.write_text(f">{name}\n{seqs[name]}\n", encoding="utf-8")
-        return len(seqs[name])
+        frag = seqs[name][: self.BLAST_MAX_CONTIG_BP]
+        out.write_text(f">{name}_first{self.BLAST_MAX_CONTIG_BP}bp\n{frag}\n", encoding="utf-8")
+        return name, len(frag), True
 
     def _best_16s(self, genome: Path, work: Path, log_prefix: str) -> Path | None:
         """barrnap ile TUM 16S kopyalarini bul, en UZUN (en tam ~1500bp) olani dondur."""
@@ -206,11 +258,16 @@ class SpeciesReferenceIdentificationModule(Module):
         r = self.ctx.runner
         t = util.threads(self.ctx)
 
-        # 1) BLAST kimlik: DAIMA en uzun contig'i NCBI nt'ye blastn + sonucu BEKLE (16S fallback YOK).
-        longest = work / "longest_contig.fa"
-        self._longest_contig(genome, longest)
-        method = "longest_contig_blastn"
-        hits = self._blast(longest, work / "blast_longest.tsv", self.BLAST_TIMEOUT, r)
+        # 0) Her contig'i ayri FASTA + uzunluk tablosu (manuel BLAST icin; toplu genome.fasta'ya dokunmaz)
+        contigs_dir = self.out_dir / "contigs_for_blast"
+        contig_lens = self._export_per_contig(genome, contigs_dir, std_dir)
+
+        # 1) BLAST kimlik: 1Mb ALTINDAKI en uzun contig'i NCBI nt'ye blastn + sonucu BEKLE (16S fallback YOK).
+        #    (>1Mb contig remote nt BLAST'ta takilir/timeout -> ya 1Mb-alti sec, ya ilk 1Mb'i BLAST'la)
+        query_fa = work / "blast_query_contig.fa"
+        blast_contig, blast_bp, truncated = self._pick_blast_contig(genome, query_fa)
+        method = "contig_blastn_lt1Mb" + ("_truncated" if truncated else "")
+        hits = self._blast(query_fa, work / "blast_query.tsv", self.BLAST_TIMEOUT, r) if blast_contig else None
 
         # kraken2 (M02) capraz-kontrol
         kraken_species = self.ctx.detection.get("ncbi_species")
@@ -271,8 +328,12 @@ class SpeciesReferenceIdentificationModule(Module):
                 fh.write(f"{s['rank']}\t{s['organism']}\t{s['assembly_accession']}\t{s['ani_percent']}\t{s['query_coverage']}\n")
         std_dir.joinpath("species_identification.json").write_text(json.dumps({
             "organism": organism, "identification_method": method,
+            "blast_query_contig": blast_contig, "blast_query_bp": blast_bp,
+            "blast_query_truncated": truncated,
             "blast_top_hits": hits[:5] if hits else [], "kraken2_species": kraken_species,
             "closest_reference": strains[0] if strains else None,
+            "contig_count": len(contig_lens),
+            "per_contig_fasta_dir": str(contigs_dir),
         }, indent=2, ensure_ascii=False), encoding="utf-8")
 
         # tur bilgisini downstream'e tasi
@@ -289,8 +350,18 @@ class SpeciesReferenceIdentificationModule(Module):
         else:
             status = "WARNING"
             warns = [closest_note or "Kimlik belirlenemedi."]
+        details = {}
+        if closest_note:
+            details["note"] = closest_note
+        details["blast_query_contig"] = blast_contig
+        details["blast_query_bp"] = blast_bp
+        if truncated:
+            details["blast_query_truncated"] = f"contig >1Mb; ilk {self.BLAST_MAX_CONTIG_BP} bp BLAST'landi"
+        details["per_contig_fasta_dir"] = str(contigs_dir)
         self.write_summary(status=status,
                            statistics={"organism": organism, "identification_method": method,
-                                       "closest_count": len(strains)},
+                                       "closest_count": len(strains),
+                                       "contig_count": len(contig_lens),
+                                       "blast_query_bp": blast_bp},
                            warnings=warns,
-                           details={"note": closest_note} if closest_note else {})
+                           details=details)
