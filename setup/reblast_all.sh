@@ -13,12 +13,12 @@ for s in "${SAMPLES[@]}"; do
   rm -f "$RUN"/09_BLAST/best_hits.tsv "$RUN"/09_BLAST/blast.tsv
   python3 -c "
 from pathlib import Path
-from ali_wgs.config_loader import load_config
-from ali_wgs.resources import detect_resources
-from ali_wgs.tool_runner import ToolRunner
-from ali_wgs.orchestrator import RunContext
-from ali_wgs.modules.m09_blast import BlastModule
-from ali_wgs.modules.m18_report import ReportModule
+from bacforge.config_loader import load_config
+from bacforge.resources import detect_resources
+from bacforge.tool_runner import ToolRunner
+from bacforge.orchestrator import RunContext
+from bacforge.modules.m09_blast import BlastModule
+from bacforge.modules.m18_report import ReportModule
 cfg=load_config(); res=detect_resources(cfg)
 ctx=RunContext(cfg,res,Path('$RUN').resolve(),ToolRunner(Path('$RUN')/'19_Logs'),'$s')
 BlastModule(ctx).run()

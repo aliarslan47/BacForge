@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 cd "$(dirname "$0")/.."
-DB="${ALI_WGS_DB:-$(pwd)/databases}"
+DB="${BACFORGE_DB:-$(pwd)/databases}"
 echo "status=running" > setup/blast.STATUS
 conda env list | grep -q '^ali-blast ' || conda create -n ali-blast -c conda-forge -c bioconda blast --yes
 mkdir -p "$DB/blast_viral"

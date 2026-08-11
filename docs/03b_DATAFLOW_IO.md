@@ -1,4 +1,4 @@
-# Ali WGS Pipeline — Veri Akışı & Input/Output Sözleşmesi (prokaryotik)
+# BacForge — Veri Akışı & Input/Output Sözleşmesi (prokaryotik)
 
 > Kural: her modül INPUT'unu bir önceki modülün OUTPUT'undan alır.
 > Eksik girdi = modül çalışmaz, açık hata verir (sessiz geçiş YOK).

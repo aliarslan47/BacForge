@@ -1,4 +1,4 @@
-"""CLI: `ali-wgs info | detect | run`. Web katmanı (sonra) bu çekirdeği dışarıdan çağırır."""
+"""CLI: `bacforge info | detect | run`. Web katmanı (sonra) bu çekirdeği dışarıdan çağırır."""
 from __future__ import annotations
 
 import argparse
@@ -40,12 +40,12 @@ def _cmd_run(args):
 def _cmd_server(args):
     import uvicorn
     print(f"Starting Antigravity Bacterial WGS Web Server on http://{args.host}:{args.port}")
-    uvicorn.run("ali_wgs.web_app:app", host=args.host, port=args.port, reload=args.reload)
+    uvicorn.run("bacforge.web_app:app", host=args.host, port=args.port, reload=args.reload)
 
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="ali-wgs", description="Antigravity Bacterial WGS Bioinformatics Platform")
-    p.add_argument("--config", default=None, help="config.yaml yolu (vars: ALI_WGS_HOME/config)")
+    p = argparse.ArgumentParser(prog="bacforge", description="Antigravity Bacterial WGS Bioinformatics Platform")
+    p.add_argument("--config", default=None, help="config.yaml yolu (vars: BACFORGE_HOME/config)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("info", help="Tespit edilen kaynakları/yolları göster").set_defaults(func=_cmd_info)

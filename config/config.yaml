@@ -1,18 +1,18 @@
 # =====================================================================
-# Ali WGS Pipeline — Merkezi Yapılandırma
+# BacForge — Merkezi Yapılandırma
 # KURAL: Kodda mutlak yol YOK. Her şey buradan / ortam değişkeninden okunur.
-# Ortam değişkenleri (taşınabilirlik): ALI_WGS_HOME, ALI_WGS_DB, ALI_WGS_WORK
+# Ortam değişkenleri (taşınabilirlik): BACFORGE_HOME, BACFORGE_DB, BACFORGE_WORK
 # =====================================================================
 
 project:
-  name: "Ali WGS Pipeline"
+  name: "BacForge"
   version: "0.1.0-mvp"
 
 # --- Yollar: ${VAR} ortam değişkeninden çözülür; taşınınca SADECE bunlar değişir ---
 paths:
-  home: "${ALI_WGS_HOME}"          # proje kök dizini
-  db:   "${ALI_WGS_DB}"            # büyük veritabanları (koddan ayrı)
-  work: "${ALI_WGS_WORK}"          # çıktı/çalışma dizini (run'lar buraya)
+  home: "${BACFORGE_HOME}"          # proje kök dizini
+  db:   "${BACFORGE_DB}"            # büyük veritabanları (koddan ayrı)
+  work: "${BACFORGE_WORK}"          # çıktı/çalışma dizini (run'lar buraya)
 
 # --- Donanım: RUNTIME'da otomatik tespit + AGRESİF kullanım ---
 # KURAL: Kaynak sabit yazılmaz. Her çalıştırmada nproc + free ile tespit edilir,
@@ -26,7 +26,7 @@ resources:
   thread_fraction: 1.0              # (toplam - reserve) çekirdeğin %100'ü araçlara
   memory_fraction: 0.90             # RAM'in %90'ına kadar
   oversubscribe: false              # hyperthread yoksa çekirdek sayısını aşma
-  tmp_dir: "${ALI_WGS_WORK}/tmp"
+  tmp_dir: "${BACFORGE_WORK}/tmp"
   # Bu makinede tespit edilen örnek değerler (her run'da yeniden hesaplanır):
   detected:
     cores: 16                       # -> kullanılacak thread: 15 (16 - 1 reserve)
@@ -111,8 +111,8 @@ contig_filter:
   min_coverage_frac: 0.10 # medyan coverage'ın %10'undan düşük -> ele
   apply_coverage: true    # coverage bilgisi varsa (Flye) uygula
 
-# --- Veritabanı sürümleri (rapora otomatik yazılır; ALI_WGS_DB altında) ---
+# --- Veritabanı sürümleri (rapora otomatik yazılır; BACFORGE_DB altında) ---
 databases:
-  bakta:     { path: "${ALI_WGS_DB}/bakta/db-light",  version: "TBD" }
-  amrfinder: { path: "${ALI_WGS_DB}/amrfinderplus",   version: "TBD" }
-  checkm2:   { path: "${ALI_WGS_DB}/checkm2",         version: "TBD" }
+  bakta:     { path: "${BACFORGE_DB}/bakta/db-light",  version: "TBD" }
+  amrfinder: { path: "${BACFORGE_DB}/amrfinderplus",   version: "TBD" }
+  checkm2:   { path: "${BACFORGE_DB}/checkm2",         version: "TBD" }

@@ -9,7 +9,7 @@ Bakteriyel WGS alanında 2022–2025 arasında **iki paradigma kayması** yaşan
 1. **ONT R10.4.1 + güncel basecalling**, kısa-okuma desteği olmadan **near-perfect** (≈Q50, 1 hata/100 kbp) bakteriyel genom üretebiliyor. Bu, "Illumina olmadan tamamlanmış genom olmaz" dogmasını yıktı.
 2. **Konsensüs/uzlaşı assembly** (Trycycler → Autocycler) ve ML-tabanlı kalite değerlendirme (CheckM2), tek-araç assembly + CheckM1 yaklaşımını doğrulukta geride bıraktı.
 
-Bu yüzden **Ali WGS Pipeline'ın araç seçimi statik değil, platform + okuma profiline göre dallanan bir karar ağacı** olarak tasarlanacaktır.
+Bu yüzden **BacForge'ın araç seçimi statik değil, platform + okuma profiline göre dallanan bir karar ağacı** olarak tasarlanacaktır.
 
 ## 0.2 Temel referans çalışmalar (doğrulanmış)
 

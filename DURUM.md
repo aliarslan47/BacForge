@@ -1,9 +1,16 @@
-# DURUM — Ali WGS Pipeline (BacForge)
+# DURUM — BacForge
 
-> "Nerede kaldık" anlık görüntüsü. Detay Claude belleğinde (`ali-wgs-pipeline` memory).
+> "Nerede kaldık" anlık görüntüsü. Detay Claude belleğinde (`bacforge` memory).
 
-**Konum:** `/home/ali/ali-wgs-pipeline/` · git: `git@github.com:aliarslan47/BacForge.git`
+**Konum:** `/home/ali/BacForge/` · git: `git@github.com:aliarslan47/BacForge.git`
 **Son güncelleme:** 2026-08-11
+
+## 2026-08-11 — PROJE ADI: ali-wgs-pipeline → BacForge (her yerde)
+Dizin `/home/ali/ali-wgs-pipeline` → `/home/ali/BacForge`; Python paketi `ali_wgs` → `bacforge`
+(42 dosya, import'lar + `python3 -m bacforge.cli`); env değişkenleri `ALI_WGS_*` → `BACFORGE_*`;
+pyproject name/script `ali-wgs` → `bacforge`; tüm dokümanlarda "Ali WGS Pipeline" → "BacForge";
+Claude bellek dosyası `ali-wgs-pipeline.md` → `bacforge.md` + `settings.local.json` path'leri güncellendi.
+Doğrulama: `import bacforge` OK, `cli info` path'leri `/home/ali/BacForge`'a çözüyor.
 
 ## Şu an nerede kaldık
 - **Milestone 1 (güvenilir uçtan-uca) TAMAM** — kısa-okuma yolu doğrulandı.

@@ -6,7 +6,7 @@
 
 ## Neden bu iş
 
-WGS pipeline'ın hiçbir arayüzü yok — sadece CLI (`python3 -m ali_wgs.cli run --input ...`).
+WGS pipeline'ın hiçbir arayüzü yok — sadece CLI (`python3 -m bacforge.cli run --input ...`).
 Tek "görsel" çıktı, çalıştırma bitince diske yazılan statik HTML raporlar (`18_Final_Report/report.html`).
 Bunlar dosya, uygulama değil: çalıştırma başlatılamıyor, ilerleme izlenemiyor, örnekler arası gezinilemiyor.
 
@@ -91,7 +91,7 @@ clinker sinteni HTML'leri, çapraz-örnek kümeler.
 `setup/` altında ~15 script, çekirdeğin *üstünde* bir "yayın hattı" oluşturmuş
 (`build_publication.py`, `build_pub_advanced.py`, `viridic_confirm.py`,
 `build_per_query_trees.py`, `finalize_ncbi.py`).
-Bunlar `ali_wgs` çekirdeğinin parçası **değil** — dışarıdan çalıştırılan tek seferlik scriptler,
+Bunlar `bacforge` çekirdeğinin parçası **değil** — dışarıdan çalıştırılan tek seferlik scriptler,
 modül sözleşmesine uymuyorlar, resume'ları yok, registry'de değiller.
 Ürettikleri veri (yayın dosyaları, filogeni, VIRIDIC) arayüzün en değerli içeriği.
 → **Web katmanına geçerken bu ayrımın nasıl ele alınacağı ilk kararlardan biri.**

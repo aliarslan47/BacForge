@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Ali WGS Pipeline — veritabanı indirme (ALI_WGS_DB altına, sürüm etiketli)
+# BacForge — veritabanı indirme (BACFORGE_DB altına, sürüm etiketli)
 # KURAL: DB'ler koddan ayrı (taşınabilirlik). Çalıştır: bash setup/download_dbs.sh
 set -uo pipefail   # not -e: bir DB inmezse diğerleri devam etsin
-DB="${ALI_WGS_DB:-$(cd "$(dirname "$0")/.." && pwd)/databases}"
+DB="${BACFORGE_DB:-$(cd "$(dirname "$0")/.." && pwd)/databases}"
 mkdir -p "$DB"
 echo "== Veritabanları -> $DB =="
 

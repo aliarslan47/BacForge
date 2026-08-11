@@ -14,11 +14,11 @@ _ENV_PATTERN = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")
 
 
 def ensure_env_defaults() -> str:
-    """ALI_WGS_HOME / _DB / _WORK ayarlanmadıysa makul varsayılan ver (taşınabilirlik)."""
-    home = os.environ.get("ALI_WGS_HOME") or str(Path(__file__).resolve().parents[1])
-    os.environ.setdefault("ALI_WGS_HOME", home)
-    os.environ.setdefault("ALI_WGS_DB", str(Path(home) / "databases"))
-    os.environ.setdefault("ALI_WGS_WORK", str(Path(home) / "runs"))
+    """BACFORGE_HOME / _DB / _WORK ayarlanmadıysa makul varsayılan ver (taşınabilirlik)."""
+    home = os.environ.get("BACFORGE_HOME") or str(Path(__file__).resolve().parents[1])
+    os.environ.setdefault("BACFORGE_HOME", home)
+    os.environ.setdefault("BACFORGE_DB", str(Path(home) / "databases"))
+    os.environ.setdefault("BACFORGE_WORK", str(Path(home) / "runs"))
     return home
 
 
@@ -39,7 +39,7 @@ def _expand(value):
 def load_config(path: str | os.PathLike | None = None) -> dict:
     ensure_env_defaults()
     if path is None:
-        path = Path(os.environ["ALI_WGS_HOME"]) / "config" / "config.yaml"
+        path = Path(os.environ["BACFORGE_HOME"]) / "config" / "config.yaml"
     path = Path(path)
     if yaml is None:
         raise RuntimeError("pyyaml kurulu değil. 'conda env create -f environment.yml' çalıştır.")

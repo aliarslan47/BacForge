@@ -10,7 +10,7 @@ FASTA_INNER = {".fasta", ".fa", ".fna"}
 
 # Tool -> izole conda env (setup/setup_envs.sh ile birebir). ToolRunner conda_env'i kullanır.
 ENV = {
-    "core": "ali-wgs",           # seqkit, minimap2, samtools, weasyprint
+    "core": "bacforge",           # seqkit, minimap2, samtools, weasyprint
     "ont_qc": "ali-ont-qc",      # nanoplot, chopper, filtlong, rasusa, seqkit
     "ill_qc": "ali-illumina-qc", # fastqc, fastp
     "illumina_qc": "ali-illumina-qc",

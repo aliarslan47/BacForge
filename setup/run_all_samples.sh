@@ -14,7 +14,7 @@ for s in "${SAMPLES[@]}"; do
   IN="$SBU/$s/raw"
   if [ ! -d "$IN" ]; then echo "[atla] $IN yok"; continue; fi
 
-  python3 -m ali_wgs.cli run --input "$IN" ; RC=$?
+  python3 -m bacforge.cli run --input "$IN" ; RC=$?
   RUN=$(ls -dt runs/*/ 2>/dev/null | head -1)
 
   # <id>/analiz/'e kopyala

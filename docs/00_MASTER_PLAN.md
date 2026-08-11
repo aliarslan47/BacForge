@@ -1,4 +1,4 @@
-# Ali WGS Pipeline — Master Plan & Metodoloji
+# BacForge — Master Plan & Metodoloji
 
 > **Durum:** FAZ 1 — Literatür Araştırması & Mimari Tasarım (kod yazımı YOK)
 > **Son güncelleme:** 2026-06-26

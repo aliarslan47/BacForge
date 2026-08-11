@@ -1,4 +1,4 @@
-# 💾 CHECKPOINT — Ali WGS Pipeline
+# 💾 CHECKPOINT — BacForge
 
 > **KAYIT ADI:** `CKPT-2026-06-29-PROKSEE-ANOT` (güncel) · eski: `CKPT-2026-06-28-PUB-FILO`, `CKPT-2026-06-26-MVP-01`
 > **Tarih:** 2026-06-29 · **Durum:** 6 örnek tam analiz + YAYIN MİMARİSİ (01-12) + per-query ICTV filogeni + Proksee/CGView etiket-dostu GBK (contig_698 pilot) BİTTİ
@@ -11,8 +11,8 @@
 > - **`setup/cds_isim_tablosu.py` (YENİ):** 2 sütunlu CDS→isim tablosu → `contig_698_ANOTASYON_TABLOSU.tsv` (+Masaüstü). VFDB öncelikli.
 > - **BEKLEYEN TEST (kullanıcı):** REANNOTATED.gbk Proksee'ye yüklenecek → `/gene` etiketleri locus_tag yerine çıkıyor mu doğrulanacak. İYİYSE → 33 contig'e genelleştir. DEĞİLSE → offline CGView/proksee-batch ile harita üret (etiket %100 kontrol; yeni env `ali-cgview`).
 > - **Anotasyon özet paragrafı** (yapısal/replikasyon/lizis/lizojeni/IEC+PVL kargo, Caudoviricetes modüler mimari) hazırlandı — doğrulandı, PVL+ORF22 eklendi.
-> **Konum:** `/home/ali/ali-wgs-pipeline/` (WSL2) · Çıktılar: `/mnt/c/.../sbu-faj/<id>/analiz/`
-> **Devam edince ilk oku:** bu dosya + hafıza notu `ali-wgs-pipeline.md` (tam ayrıntı orada)
+> **Konum:** `/home/ali/BacForge/` (WSL2) · Çıktılar: `/mnt/c/.../sbu-faj/<id>/analiz/`
+> **Devam edince ilk oku:** bu dosya + hafıza notu `BacForge.md` (tam ayrıntı orada)
 >
 > ## GÜNCEL DURUM ÖZETİ (2026-06-28)
 > - **33 yayına uygun faj** (6 örnek), hepsi NCBI core_nt kimlikli (jumbo'lar VIRIDIC ile: phiKZ/Elvirus/Chimalliviridae). 26 web/auto BLAST + 7 jumbo VIRIDIC.
@@ -46,14 +46,14 @@
 - Literatür (DOI doğrulanmış): `docs/literature/` (Flye, Bakta, Trycycler/Autocycler, Polypolish, CheckM2, AMRFinderPlus, + faj: Pharokka/CheckV/geNomad/BACPHLIP)
 
 ### Kod (çekirdek + 11 MVP modülü) — import-temiz, test edildi
-- `ali_wgs/`: config_loader, resources (otomatik+agresif), tool_runner (provenance), detect, util, orchestrator, cli
+- `bacforge/`: config_loader, resources (otomatik+agresif), tool_runner (provenance), detect, util, orchestrator, cli
 - Modüller: 01 input · 03 QC · 04 filtering · 05 assembly(Flye/Medaka/SKESA) · 06 assembly_qc(QUAST+coverage+circular) · 07 contig_filter · 08 geNomad(router) · 10 annotation(Bakta/Pharokka) · 11 AMR · 17 completeness(CheckM2/CheckV) · 18 report(HTML+PDF+APA refs)
-- ÇALIŞAN: `ali-wgs detect/info/run` · platform tespiti · 00–19 run yapısı · resume · provenance · rapor HTML
+- ÇALIŞAN: `bacforge detect/info/run` · platform tespiti · 00–19 run yapısı · resume · provenance · rapor HTML
 
 ### Ortamlar — 15/15 conda env KURULDU ✅
-ali-wgs(core), ali-ont-qc, ali-illumina-qc, ali-flye, ali-medaka, ali-assembly-sr, ali-hifiasm, ali-quast, ali-genomad, ali-bakta, ali-pharokka, ali-checkm2, ali-checkv, ali-bacphlip, ali-amrfinder
+bacforge(core), ali-ont-qc, ali-illumina-qc, ali-flye, ali-medaka, ali-assembly-sr, ali-hifiasm, ali-quast, ali-genomad, ali-bakta, ali-pharokka, ali-checkm2, ali-checkv, ali-bacphlip, ali-amrfinder
 
-### Veritabanları (`databases/` = ALI_WGS_DB) — ✅ HEPSİ TAMAM (toplam 17G)
+### Veritabanları (`databases/` = BACFORGE_DB) — ✅ HEPSİ TAMAM (toplam 17G)
 - ✅ Bakta (4.0G), AMRFinderPlus (240M), CheckM2 (2.9G), Pharokka (1.8G), CheckV v1.5 (6.4G), geNomad (1.4G)
 - Not: geNomad'ı genomad'ın kendi indiricisi yerine curl ile çektik (Zenodo:14886553). download_dbs.sh artık `mkdir -p $DB/genomad` ile düzeltildi.
 
@@ -68,7 +68,7 @@ ali-wgs(core), ali-ont-qc, ali-illumina-qc, ali-flye, ali-medaka, ali-assembly-s
 
 ### 1. Kalan DB'leri tamamla (idempotent — sadece eksikleri indirir)
 ```bash
-cd /home/ali/ali-wgs-pipeline
+cd /home/ali/BacForge
 bash setup/download_dbs.sh        # CheckV + geNomad'ı tamamlar
 # geNomad'ı doğrula:
 ls databases/genomad/genomad_db || conda run -n ali-genomad genomad download-database databases/genomad
@@ -77,10 +77,10 @@ ls databases/genomad/genomad_db || conda run -n ali-genomad genomad download-dat
 ### 2. İki TEST'i çalıştır (asıl beklenen iş)
 ```bash
 # Bakteri zinciri: geNomad(chromosome)->Bakta->CheckM2->AMRFinder
-python3 -m ali_wgs.cli run --input test_data/bacteria_ecoli_k12/ecoli_k12_mg1655.fna
+python3 -m bacforge.cli run --input test_data/bacteria_ecoli_k12/ecoli_k12_mg1655.fna
 
 # Faj zinciri: Flye->Medaka->geNomad(virus)->Pharokka->CheckV->AMRFinder
-python3 -m ali_wgs.cli run --input test_data/phage_faj200225319/
+python3 -m bacforge.cli run --input test_data/phage_faj200225319/
 ```
 > Çıktı: `runs/<run_id>/` (00–19 klasörleri + 18_Final_Report/report.html)
 
@@ -97,10 +97,10 @@ python3 -m ali_wgs.cli run --input test_data/phage_faj200225319/
 - Rapor şimdilik "sade-doğru"; dizaynlı/profesyonel rapor + web servis = sonraki fazlar.
 
 ## 📌 KARARLAR (değişmez)
-Python orchestrator (FastAPI'ye hazır) · conda izole env (→ Docker sonra) · otomatik+agresif kaynak · kodda mutlak yol YOK (ALI_WGS_HOME/_DB/_WORK) · içerik-farkında routing · her araç literatürle gerekçeli.
+Python orchestrator (FastAPI'ye hazır) · conda izole env (→ Docker sonra) · otomatik+agresif kaynak · kodda mutlak yol YOK (BACFORGE_HOME/_DB/_WORK) · içerik-farkında routing · her araç literatürle gerekçeli.
 
 ## 🚚 BAŞKA MAKİNEDE DEVAM EDİLECEKSE (taşıma)
 1. Proje klasörünü kopyala (databases/ + runs/ hariç tutabilirsin)
 2. `conda env create -f environment.yml` + `bash setup/setup_envs.sh`
 3. `bash setup/download_dbs.sh` (DB'ler yeniden iner)
-4. `ALI_WGS_HOME/_DB/_WORK` ayarla → testleri çalıştır
+4. `BACFORGE_HOME/_DB/_WORK` ayarla → testleri çalıştır

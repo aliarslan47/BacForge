@@ -1,4 +1,4 @@
-# Ali WGS Pipeline — İzole Ortamlar & Veritabanı Planı
+# BacForge — İzole Ortamlar & Veritabanı Planı
 
 > İlke: Ağır/çakışan araçlar TEK env'e tıkıştırılmaz. Her araç **izole conda env**'de;
 > ToolRunner `conda run -n <env>` ile çağırır. Bu hem çakışmayı önler hem de
@@ -8,7 +8,7 @@
 
 | Env | Araç(lar) | Kullanıldığı modül |
 |-----|-----------|--------------------|
-| `ali-wgs` (çekirdek) | python, pyyaml, pandas, jinja2, weasyprint, seqkit, minimap2, samtools, bwa-mem2 | orchestrator, 01, 03, 06, 18 |
+| `bacforge` (çekirdek) | python, pyyaml, pandas, jinja2, weasyprint, seqkit, minimap2, samtools, bwa-mem2 | orchestrator, 01, 03, 06, 18 |
 | `ali-ont-qc` | nanoplot, chopper, filtlong | 03, 04 (ONT) |
 | `ali-illumina-qc` | fastqc, fastp | 03, 04 (Illumina) |
 | `ali-flye` | flye | 05 (ONT/Hybrid) |
@@ -24,7 +24,7 @@
 > Sonraki fazlar: `ali-tax` (skani, mash, gtdbtk), `ali-plasmid` (mob_suite, plasmidfinder, platon),
 > `ali-phage` (genomad, vibrant, phispy, checkv), `ali-mlst` (mlst, chewbbaca), `ali-blast` (blast).
 
-## 2. Veritabanları — `ALI_WGS_DB` altında, sürüm etiketli (koddan ayrı = taşınabilir)
+## 2. Veritabanları — `BACFORGE_DB` altında, sürüm etiketli (koddan ayrı = taşınabilir)
 
 | DB | Araç | Boyut (yaklaşık) | Not |
 |----|------|------------------|-----|
@@ -40,6 +40,6 @@ Her DB klasöründe `version.txt` + checksum tutulur; rapora otomatik yazılır.
 ```
 conda env create -f environment.yml          # çekirdek
 bash setup/setup_envs.sh                      # izole araç env'leri
-bash setup/download_dbs.sh                    # veritabanları (ALI_WGS_DB)
+bash setup/download_dbs.sh                    # veritabanları (BACFORGE_DB)
 ```
 > Bu adımlar GB'larca indirme yapar; kullanıcı onayıyla başlatılır.

@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ali-wgs"
+name = "bacforge"
 version = "0.1.0"
-description = "Ali WGS Pipeline — prokaryotik bakteriyel WGS analiz platformu"
+description = "BacForge — prokaryotik bakteriyel WGS analiz platformu"
 requires-python = ">=3.10"
 dependencies = ["pyyaml>=6"]
 
 [project.scripts]
-ali-wgs = "ali_wgs.cli:main"
+bacforge = "bacforge.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["ali_wgs*"]
+include = ["bacforge*"]

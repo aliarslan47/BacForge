@@ -1,4 +1,4 @@
-# Ali WGS Pipeline
+# BacForge
 
 Prokaryotik (bakteriyel) Whole Genome Sequencing analiz platformu. Farklı platformlardan
 (ONT / Illumina / PacBio HiFi / Hybrid) gelen veriyi **kullanıcıdan seçim istemeden**
@@ -9,27 +9,27 @@ otomatik analiz eder. Modüler, taşınabilir, reproducible; her araç hakemli l
 ## Hızlı bakış
 ```bash
 # Tespit edilen kaynaklar (otomatik + agresif)
-python3 -m ali_wgs.cli info
+python3 -m bacforge.cli info
 
 # Girdiden platform tespiti (conda gerektirmez)
-python3 -m ali_wgs.cli detect --input <dosya|dizin>
+python3 -m bacforge.cli detect --input <dosya|dizin>
 
 # Uçtan uca çalıştır
-python3 -m ali_wgs.cli run --input <dosya|dizin>
+python3 -m bacforge.cli run --input <dosya|dizin>
 ```
 
 ## Yapı
 ```
 config/config.yaml      merkezi config (mutlak yol YOK)
 environment.yml         çekirdek conda ortamı
-ali_wgs/                çekirdek kütüphane (config, resources, runner, detect, modules, orchestrator, cli)
+bacforge/                çekirdek kütüphane (config, resources, runner, detect, modules, orchestrator, cli)
 docs/                   mimari + literatür (00..04 + literature/)
-runs/                   çıktılar (ALI_WGS_WORK)  [git'e girmez]
-databases/              veritabanları (ALI_WGS_DB) [git'e girmez]
+runs/                   çıktılar (BACFORGE_WORK)  [git'e girmez]
+databases/              veritabanları (BACFORGE_DB) [git'e girmez]
 ```
 
 ## Taşınabilirlik
-Taşımak için: proje klasörünü kopyala, `ALI_WGS_HOME/_DB/_WORK` ayarla,
+Taşımak için: proje klasörünü kopyala, `BACFORGE_HOME/_DB/_WORK` ayarla,
 `conda env create -f environment.yml`. Detay: `docs/04_PORTABILITY.md`.
 
 ## Belgeler

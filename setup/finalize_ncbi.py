@@ -7,13 +7,13 @@
 - sbu-faj/<id>/analiz/ kopyaları + TUM_ORNEKLER_OZET_NCBI.tsv tazelenir.
 """
 import os, shutil, csv, time
-os.environ["ALI_WGS_NCBI_READONLY"] = "1"   # KRİTİK: yavaş BLAST tetikleme
+os.environ["BACFORGE_NCBI_READONLY"] = "1"   # KRİTİK: yavaş BLAST tetikleme
 from pathlib import Path
-from ali_wgs.config_loader import load_config
-from ali_wgs.resources import detect_resources
-from ali_wgs.tool_runner import ToolRunner
-from ali_wgs.orchestrator import RunContext
-from ali_wgs.modules.m18_report import ReportModule
+from bacforge.config_loader import load_config
+from bacforge.resources import detect_resources
+from bacforge.tool_runner import ToolRunner
+from bacforge.orchestrator import RunContext
+from bacforge.modules.m18_report import ReportModule
 
 ROOT = Path(__file__).resolve().parents[1]
 SBU = Path("/mnt/c/Users/aliar/Desktop/Ali_Calismalar/sbu-faj")

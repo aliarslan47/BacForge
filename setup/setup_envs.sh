@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ali WGS Pipeline — izole conda env kurulumu (MVP: bakteri + faj zinciri)
+# BacForge — izole conda env kurulumu (MVP: bakteri + faj zinciri)
 # Her araç ayrı env'de -> çakışma yok + Docker'a kolay geçiş.
 # Çalıştır: bash setup/setup_envs.sh
 set -uo pipefail   # not -e: bir araç kurulamazsa diğerleri devam etsin

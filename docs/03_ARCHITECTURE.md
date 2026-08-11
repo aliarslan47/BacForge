@@ -1,4 +1,4 @@
-# Ali WGS Pipeline — Mimari (v0.1)
+# BacForge — Mimari (v0.1)
 
 > Kararlar: Python orchestrator · config-driven · runtime'da otomatik+agresif kaynak ·
 > conda/bioconda · lokal PC (şimdi) · taşınabilir · web'e hazır sınır (sonra)
@@ -13,9 +13,9 @@
 └───────────────▲──────────────────────────────────────────────┘
                 │  (stabil API sınırı — taşıma burada kesilir)
 ┌───────────────┴──────────────────────────────────────────────┐
-│  ÇEKİRDEK: ali_wgs  (ŞİMDİ — saf Python kütüphane + CLI)       │
+│  ÇEKİRDEK: bacforge  (ŞİMDİ — saf Python kütüphane + CLI)       │
 │                                                                │
-│   CLI:  ali-wgs run --input <dosya/dizin> [--config ...]       │
+│   CLI:  bacforge run --input <dosya/dizin> [--config ...]       │
 │                                                                │
 │   ┌──────────────┐   ┌────────────────┐   ┌───────────────┐   │
 │   │ ConfigLoader │   │ ResourceManager│   │  Orchestrator │   │
@@ -36,15 +36,15 @@
                           └──────────────┘
 ```
 
-## 2. Repo (kod) yapısı — `ALI_WGS_HOME`
+## 2. Repo (kod) yapısı — `BACFORGE_HOME`
 
 ```
-ali-wgs-pipeline/
+BacForge/
 ├── config/
 │   └── config.yaml            # merkezi config (mutlak yol YOK)
 ├── environment.yml            # pinlenmiş conda ortamı (taşınabilir)
-├── ali_wgs/                   # ÇEKİRDEK kütüphane
-│   ├── cli.py                 # `ali-wgs run ...`
+├── bacforge/                   # ÇEKİRDEK kütüphane
+│   ├── cli.py                 # `bacforge run ...`
 │   ├── config_loader.py       # ${ENV} + yaml çözümleme
 │   ├── resources.py           # otomatik+agresif kaynak tespiti
 │   ├── orchestrator.py        # DAG, sıra, resume, paralellik
@@ -57,9 +57,9 @@ ali-wgs-pipeline/
 ├── docs/                      # literatür + mimari (bu klasör)
 └── tests/                     # mini sentetik veriyle uçtan uca test
 ```
-> **DB'ler burada DEĞİL** → `ALI_WGS_DB` altında, sürüm etiketli (taşınabilirlik kuralı 3).
+> **DB'ler burada DEĞİL** → `BACFORGE_DB` altında, sürüm etiketli (taşınabilirlik kuralı 3).
 
-## 3. Run çıktı yapısı — `ALI_WGS_WORK/<run_id>/`
+## 3. Run çıktı yapısı — `BACFORGE_WORK/<run_id>/`
 
 ```
 <run_id>/                      # run_id = tarih + örnek + config-hash
@@ -149,7 +149,7 @@ DB sürümü, başlangıç/bitiş, süre, exit code → `19_Logs/<m>.provenance.
 Rapordaki `References` ve `Methods` bu provenance + `docs/literature` atıflarından **otomatik** üretilir.
 
 ## 9. Taşıma sınırı
-Çekirdek (`ali_wgs`) hiçbir mutlak yol/host bilgisi tutmaz. Taşıma = 3 env değişkeni +
+Çekirdek (`bacforge`) hiçbir mutlak yol/host bilgisi tutmaz. Taşıma = 3 env değişkeni +
 `environment.yml` (sonra Docker imajı). Web katmanı bu sınırın üstüne eklenir, çekirdeği değiştirmez.
 ```
 ```

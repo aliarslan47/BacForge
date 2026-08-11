@@ -1,10 +1,10 @@
 # =====================================================================
-# Ali WGS Pipeline — ÇEKİRDEK ortam (orchestrator + evrensel hafif araçlar)
+# BacForge — ÇEKİRDEK ortam (orchestrator + evrensel hafif araçlar)
 # KURAL: Ağır/çakışan araçlar (medaka, checkm2, bakta, flye...) BURADA DEĞİL;
 #        her biri izole env'de (bkz. docs/04_ENV_DB.md + envs/*.yml) → conda run.
 # Kurulum: conda env create -f environment.yml   (sonra: setup_envs.sh izole env'ler)
 # =====================================================================
-name: ali-wgs
+name: bacforge
 channels:
   - conda-forge
   - bioconda
