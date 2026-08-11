@@ -38,6 +38,15 @@
 - Kraken2 DB küçük → tür-düzeyi dağıtıyor (M02 WARNING); Bracken eklenebilir.
 
 
+## 2026-08-11 (gece) — RAPOR & 7 GERI BILDIRIM DUZELTMESI (commit a047bc2)
+Kullanici geri bildirimleriyle: (1) genom haritasi referans-sirali tek psodo-kromozom -> dairesel harita
+0.0 Mbp fix (minimap2 + 2. Bakta plot). (2) MLST Lokus|Alel tablosu (ST571). (3) M13 snippy GenBank ref
+-> 8322 kodlayan varyant gen/EFFECT dolu (dnaA synonymous vb.). (4) M14 clinker QUERY daima ustte + en
+yakin 5 tur. (5) M16 cesitlilik havuzu -> 13 yaprakli anlamli agac. (6) M05 16S fallback KALDIRILDI, daima
+BLAST+bekle (3600s); M02 Bracken -> A.baumannii %94.83 PASS (WARNING gitti). (7) M18 klasoru=SADECE rapor
+(zip/refs run kokune); Figure 1 BacForge'a OZGU 'dallan->birles->yelpaze' semasi (nf-core tarzi DEGIL, kural).
+Rapor: 14 numarali Table + 5 Figure, pipeline calisma sirasina gore. Kosu: runs/20260811_165209_short.
+
 ## 2026-08-11 (aksam) — TAM UCTAN-UCA DOGRULANDI (Acinetobacter, katı sözleşme)
 Final re-run: 19 modul, hepsi gercek ciktiyla. M06 Bakta --skip-sorf segfault fix pipeline'da tuttu (gercek GenBank 9.6MB).
 M05 species-agnostic closest-5 gercek (BLAST kimlik + datasets + FastANI; %99.5 ANI). M14 HEDEFLI clinker (AMR+virulans,
