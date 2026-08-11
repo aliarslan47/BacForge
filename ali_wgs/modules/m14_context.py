@@ -15,6 +15,7 @@ from .. import util
 
 WINDOW = 15000     # gen etrafinda +-15 kb
 MAX_TARGETS = 6    # en fazla lokus (AMR + virulans karisik)
+N_REFS = 5         # query + en yakin 5 tur ile karsilastir
 
 # ali-comparative (Biopython) icinde calisir: hedef genin komsulugunu her genomdan kes.
 SLICER = r'''
@@ -121,7 +122,7 @@ class GenomicContextModule(Module):
         refs = []
         if ref_json.exists():
             try:
-                for x in (json.load(open(ref_json)) or [])[:3]:
+                for x in (json.load(open(ref_json)) or [])[:N_REFS]:
                     gbk = Path(x.get("fasta_path", "")).with_suffix(".gbff")
                     if gbk.exists():
                         refs.append({"label": x["assembly_accession"], "gbk": str(gbk)})
@@ -159,7 +160,10 @@ class GenomicContextModule(Module):
                 continue
             gene = ti["gene"]; tdir = Path(ti["dir"])
             html = vis / f"clinker_{gene.replace('/','_').replace(chr(39),'')}.html"
-            gbks = sorted(str(p) for p in tdir.glob("*.gbk"))
+            # QUERY DAIMA USTTE: once QUERY.gbk, sonra referanslar (clinker girdi sirasini korur)
+            q = tdir / "QUERY.gbk"
+            refs_gbk = sorted(str(p) for p in tdir.glob("*.gbk") if p.name != "QUERY.gbk")
+            gbks = ([str(q)] if q.exists() else []) + refs_gbk
             prov = r.run(f"clinker_{gene[:16]}", ["clinker", *gbks, "-p", str(html)],
                          conda_env=util.ENV.get("clinker", "base"), check=False)
             if html.exists() and html.stat().st_size > 1000:

@@ -140,6 +140,13 @@ class GenomeAnnotationModule(Module):
         (id_map_dir / "identifiers.tsv").write_text(
             "feature_type\tlocus_tag\tgene_symbol\tproduct\tcontig\tstart\tend\tstrand\n", encoding="utf-8")
 
+        # Dairesel genom haritasi: parcali assembly'de per-contig plot "0.0 Mbp" verir.
+        # Contig'leri en yakin referansa gore sirala -> tek psodo-kromozom -> tek daire (dogru Mbp).
+        try:
+            self._reference_ordered_map(genome, std_dir, r, E, t, dbp)
+        except Exception as exc:  # harita basarisiz olsa da M06'yi dusurme
+            print(f"[M06] referans-sirali harita uretilemedi ({exc}); per-contig harita kullanilacak.")
+
         self.write_summary(
             status="PASS" if audit["passed"] else "WARNING",
             statistics={"cds": cds, "trna": trna, "rrna": rrna,
@@ -149,3 +156,54 @@ class GenomeAnnotationModule(Module):
             warnings=audit["warnings"],
             details={"annotator": "Bakta (--skip-sorf)", "genbank": str(std_dir / "annotation.gbk")},
         )
+
+    def _reference_ordered_map(self, genome, std_dir, r, E, t, dbp):
+        """Contig'leri en yakin referansa (M05) gore sirala -> tek psodo-kromozom -> Bakta plot
+        (tek daire, dogru Mbp ekseni). Boylece parcali assembly'nin '0.0 Mbp' hatasi cozulur."""
+        ref_json = self.ctx.run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
+        if not ref_json.exists():
+            return
+        strains = json.load(open(ref_json))
+        if not strains:
+            return
+        ref = Path(strains[0].get("fasta_path", ""))
+        if not ref.exists():
+            return
+        work = self.sub_dir("02_work")
+        paf = work / "contigs_vs_ref.paf"
+        r.run("minimap2_order", ["minimap2", "-x", "asm20", "-t", str(t), str(ref), str(genome)],
+              conda_env=E.get("core", "base"), stdout_path=str(paf), check=False)
+        if not paf.exists() or paf.stat().st_size == 0:
+            return
+        best = {}
+        for line in open(paf, encoding="utf-8"):
+            p = line.split("\t")
+            if len(p) < 12:
+                continue
+            q, strand, tname = p[0], p[4], p[5]
+            try:
+                tstart, aln = int(p[7]), int(p[10])
+            except ValueError:
+                continue
+            if q not in best or aln > best[q][0]:
+                best[q] = (aln, tname, tstart, strand)
+        seqs = util.read_fasta(genome)
+        mapped = sorted(best.keys(), key=lambda q: (best[q][1], best[q][2]))
+        order = mapped + [c for c in seqs if c not in best]
+        comp = {"A": "T", "T": "A", "G": "C", "C": "G", "N": "N",
+                "a": "t", "t": "a", "g": "c", "c": "g"}
+        parts = []
+        for c in order:
+            s = seqs[c]
+            if c in best and best[c][3] == "-":
+                s = "".join(comp.get(b, "N") for b in reversed(s))
+            parts.append(s)
+        pseudo = work / "pseudochromosome.fasta"
+        pseudo.write_text(">pseudochromosome_ref_ordered\n" + ("N" * 100).join(parts) + "\n", encoding="utf-8")
+        pdir = work / "bakta_pseudo"
+        prov = r.run("bakta_map", ["bakta", "--db", f"{dbp}/bakta/db-light", "--output", str(pdir),
+                     "--prefix", "pseudo", "--skip-sorf", "--threads", str(t), "--force", str(pseudo)],
+                     conda_env=E["bakta"], check=False)
+        png = pdir / "pseudo.png"
+        if prov.get("exit_code") == 0 and png.exists():
+            shutil.copy(png, std_dir / "genome_map.png")   # tek daire, dogru Mbp

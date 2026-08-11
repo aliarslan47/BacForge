@@ -127,17 +127,32 @@ class TaxonomicQCModule(Module):
             self._write_empty_std(std_dir, reason="Tür sınıflandırması yok")
             return
 
-        species = parsed["dominant_organism"]
+        # Bracken: tür-düzeyi abundansı yeniden tahmin et (küçük kraken DB'nin dağıtımını düzeltir)
+        bracken = self._run_bracken(kraken_db, kraken_report, r)
+
+        if bracken:
+            species = bracken["name"]
+            taxid = bracken["taxonomy_id"]
+            dominance = bracken["fraction"] * 100.0          # tüm okumalar içinde (Bracken)
+            contamination = round(100.0 - dominance, 2)
+            source = "bracken"
+        else:
+            species = parsed["dominant_organism"]
+            taxid = parsed["taxonomy_id"]
+            dominance = parsed["dominance_percent_of_classified_species"]
+            contamination = parsed["contamination_percent"]
+            source = "kraken2"
+
         # Türü downstream modüllere taşı (M05/M07/M13/M17 bunu kullanır)
         self.ctx.detection["ncbi_species"] = species
-        self.ctx.detection["ncbi_taxid"] = parsed["taxonomy_id"]
+        self.ctx.detection["ncbi_taxid"] = taxid
 
         tax_data = {
             "dominant_organism": species,
-            "taxonomy_id": parsed["taxonomy_id"],
-            "dominance_percent": parsed["dominance_percent_of_total"],
-            "dominance_percent_of_classified_species": parsed["dominance_percent_of_classified_species"],
-            "contamination_percent": parsed["contamination_percent"],
+            "taxonomy_id": taxid,
+            "dominance_percent": round(dominance, 2),
+            "contamination_percent": contamination,
+            "source": source,
             "hybrid_concordance": "N/A",
         }
 
@@ -145,8 +160,8 @@ class TaxonomicQCModule(Module):
             json.dump(tax_data, fh, indent=2, ensure_ascii=False)
         # M05'in okuduğu tür dosyası
         with open(std_dir / "species_identification.json", "w", encoding="utf-8") as fh:
-            json.dump({"species": species, "taxid": parsed["taxonomy_id"],
-                       "source": "kraken2"}, fh, indent=2, ensure_ascii=False)
+            json.dump({"species": species, "taxid": taxid,
+                       "source": source}, fh, indent=2, ensure_ascii=False)
         with open(std_dir / "taxonomy.tsv", "w", encoding="utf-8") as fh:
             fh.write("Taxonomy_ID\tOrganism\tPercent_of_total\tClade_reads\n")
             for row in parsed["species_ranked"]:
@@ -154,18 +169,49 @@ class TaxonomicQCModule(Module):
         with open(std_dir / "contamination.tsv", "w", encoding="utf-8") as fh:
             fh.write("Metric\tValue\n")
             fh.write(f"Dominant_organism\t{species}\n")
-            fh.write(f"Contamination_percent\t{parsed['contamination_percent']}\n")
+            fh.write(f"Dominance_percent\t{round(dominance, 2)}\n")
+            fh.write(f"Contamination_percent\t{contamination}\n")
 
-        # Kontaminasyon eşiği: baskın tür sınıflanan türlerin >%90'ı ise temiz sayılır
-        clean = parsed["dominance_percent_of_classified_species"] >= 90.0
+        # Bracken abundansı ile temizlik kararı: baskın tür >= %90 -> PASS
+        clean = dominance >= 90.0
         self.write_summary(
             status="PASS" if clean else "WARNING",
             statistics=tax_data,
-            warnings=[] if clean else [f"Olası kontaminasyon: baskın tür sınıflanan türlerin yalnızca "
-                                       f"%{parsed['dominance_percent_of_classified_species']}'i."],
-            details={"note": "Baskın tür kraken2 raporundan (en yüksek tür-düzeyi okuma). "
-                             "Düşük mutlak yüzdeler sınırlı kraken2 DB kapsamından olabilir."},
+            warnings=[] if clean else [f"Olası kontaminasyon: baskın tür ({species}) "
+                                       f"okumaların yalnızca %{round(dominance, 2)}'i ({source})."],
+            details={"note": f"Baskın tür {source} ile belirlendi (Bracken tür-düzeyi abundans re-estimasyonu)."},
         )
+
+    def _run_bracken(self, kraken_db, kraken_report, r) -> dict | None:
+        """Bracken ile tür-düzeyi abundans; en baskın türü döndürür (name, taxid, fraction)."""
+        # okuma uzunluğuna en yakın kmer DB'sini seç (150 varsayılan)
+        rlen = "150"
+        out_tsv = self.sub_dir("03_native_outputs") / "bracken_species.tsv"
+        brep = self.sub_dir("03_native_outputs") / "bracken_report.txt"
+        prov = r.run("bracken", ["bracken", "-d", str(kraken_db), "-i", str(kraken_report),
+                                 "-o", str(out_tsv), "-w", str(brep), "-r", rlen, "-l", "S", "-t", "1"],
+                     conda_env=util.ENV.get("qc", "base"), version_cmd=["bracken", "--version"], check=False)
+        if prov.get("exit_code") != 0 or not out_tsv.exists():
+            return None
+        best = None
+        with open(out_tsv, encoding="utf-8") as fh:
+            header = fh.readline().rstrip("\n").split("\t")
+            try:
+                i_name = header.index("name"); i_tax = header.index("taxonomy_id")
+                i_frac = header.index("fraction_total_reads")
+            except ValueError:
+                return None
+            for line in fh:
+                p = line.rstrip("\n").split("\t")
+                if len(p) <= max(i_name, i_tax, i_frac):
+                    continue
+                try:
+                    frac = float(p[i_frac])
+                except ValueError:
+                    continue
+                if best is None or frac > best["fraction"]:
+                    best = {"name": p[i_name], "taxonomy_id": p[i_tax], "fraction": frac}
+        return best
 
     def _write_empty_std(self, std_dir, reason: str):
         empty = {"dominant_organism": None, "taxonomy_id": None, "dominance_percent": None,

@@ -82,7 +82,6 @@ class PhylogenomicsModule(Module):
             except Exception:
                 refs = []
 
-        # Anlamli agac icin sorgu + >=2 referans (>=3 yaprak) gerekir
         if len(refs) < 2:
             reason = (f"Akrabalik agaci icin >=2 referans gerekir; M05 {len(refs)} kullanilabilir referans verdi "
                       f"-> NOT_APPLICABLE.")
@@ -90,11 +89,32 @@ class PhylogenomicsModule(Module):
                                details={"reason": reason})
             return
 
-        # Genom seti + okunabilir etiketler
-        paths = [str(genome)] + [x["fasta_path"] for x in refs]
+        # CESITLILIK: sadece en-yakin 5 (hepsi ~ayni) duz/anlamsiz agac verir.
+        # M05'in indirdigi havuzdan daha uzak suslari da ekle -> gercek yapili agac (~12 yaprak).
         labels = {str(genome): "QUERY_sample"}
+        paths = [str(genome)]
+        close_paths = set()
         for x in refs:
-            labels[x["fasta_path"]] = f"{x['assembly_accession']}(ANI{x.get('ani_percent','?')})"
+            fp = x["fasta_path"]
+            paths.append(fp); close_paths.add(fp)
+            labels[fp] = f"{x['assembly_accession']}(ANI{x.get('ani_percent','?')})"
+        # havuz kok dizini (closest_5'in fasta yolundan yukari) -> tum cekilen genomlar
+        pool = []
+        try:
+            anchor = Path(refs[0]["fasta_path"])
+            for up in anchor.parents:
+                if up.name == "unz" or (up / "ncbi_dataset").exists():
+                    pool = sorted(up.rglob("*.fna")); break
+        except Exception:
+            pool = []
+        extra = [str(p) for p in pool if str(p) not in close_paths]
+        # havuzdan esit araliklarla ~7 uzak sus sec (cesitlilik)
+        take = 7
+        if extra:
+            step = max(1, len(extra) // take)
+            for p in extra[::step][:take]:
+                paths.append(p)
+                labels[p] = Path(p).stem.split("_")[0] + "_" + Path(p).stem.split("_")[1] if "_" in Path(p).stem else Path(p).stem
         (work / "labels.json").write_text(json.dumps(labels), encoding="utf-8")
 
         # mash sketch + triangle

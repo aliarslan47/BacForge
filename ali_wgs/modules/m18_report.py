@@ -86,10 +86,18 @@ class FinalReportExportModule(Module):
     def run(self):
         self.check_inputs()
         run_dir = Path(self.ctx.run_dir)
-        std_dir = self.sub_dir("04_standardized")
+        std_dir = self.out_dir  # M18 klasoru = SADECE rapor
 
-        with open(std_dir / "scientific_references.json", "w", encoding="utf-8") as fh:
-            json.dump({"tools_and_databases": self.TOOL_REFERENCES}, fh, indent=2, ensure_ascii=False)
+        # Eski kosulardan kalan kalintlari temizle (M18 = sadece rapor + kendi summary'si)
+        for stale in ("PROJECT_COMPLETE", "PROJECT_COMPLETE.zip", "scientific_references.json"):
+            p = std_dir / stale
+            try:
+                if p.is_dir():
+                    shutil.rmtree(p)
+                elif p.exists():
+                    p.unlink()
+            except Exception:
+                pass
 
         dash_file = run_dir / "M17_STATISTICS_VISUALIZATION" / "dashboard_data.json"
         dash_data = {}
@@ -97,27 +105,25 @@ class FinalReportExportModule(Module):
             with open(dash_file, "r", encoding="utf-8") as fh:
                 dash_data = json.load(fh)
 
+        # M18 klasorunde YALNIZ rapor
         report_path = std_dir / "report.html"
         with open(report_path, "w", encoding="utf-8") as fh:
             fh.write(self._build_html_report(dash_data, run_dir))
 
-        # PROJECT_COMPLETE bundle + zip
-        export_dir = self.sub_dir("02_work") / "PROJECT_COMPLETE"
-        if export_dir.exists():
-            shutil.rmtree(export_dir)
-        export_dir.mkdir(parents=True, exist_ok=True)
-        for sub in run_dir.iterdir():
-            if sub.is_dir() and sub.name.startswith("M") and sub.name != self.folder:
-                shutil.copytree(sub, export_dir / sub.name, dirs_exist_ok=True)
-        for fn in ["project_manifest.json", "README.txt"]:
-            if (run_dir / fn).exists():
-                shutil.copy(run_dir / fn, export_dir / fn)
-        zip_path = std_dir / "PROJECT_COMPLETE.zip"
+        # Referanslar + tam-proje zip'i RUN KOKUNDE (M18'i kirletme)
+        with open(run_dir / "scientific_references.json", "w", encoding="utf-8") as fh:
+            json.dump({"tools_and_databases": self.TOOL_REFERENCES}, fh, indent=2, ensure_ascii=False)
+        zip_path = run_dir / "PROJECT_COMPLETE.zip"
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            for root, _dirs, files in os.walk(export_dir):
-                for f in files:
-                    fp = Path(root) / f
-                    zf.write(fp, fp.relative_to(export_dir))
+            for sub in sorted(run_dir.iterdir()):
+                if sub.is_dir() and sub.name.startswith("M"):
+                    for rootd, _d, files in os.walk(sub):
+                        for f in files:
+                            fp = Path(rootd) / f
+                            zf.write(fp, fp.relative_to(run_dir))
+            for fn in ["project_manifest.json", "README.txt", "scientific_references.json"]:
+                if (run_dir / fn).exists():
+                    zf.write(run_dir / fn, fn)
 
         self.write_summary(
             status="PASS",
@@ -197,23 +203,40 @@ class FinalReportExportModule(Module):
         color = {"PASS": "#2e7d32", "WARNING": "#ed6c02", "NOT_APPLICABLE": "#757575",
                  "SKIPPED": "#757575", "FAIL": "#c62828"}
 
-        # ---- Figure 1: pipeline akis semasi ----
-        chips = ""
-        for i, (code, nm, tool) in enumerate(self.PIPELINE_STEPS):
+        # ---- Figure 1: BACFORGE'a OZGU akis semasi (dallan -> birles -> yelpaze) ----
+        smap = {c: (nm, tool) for c, nm, tool in self.PIPELINE_STEPS}
+
+        def nd(code, tool_override=None):
             c = color.get(st(code), "#546e7a")
-            arrow = "" if i == 0 else '<span class="arw">&rarr;</span>'
-            chips += (f'{arrow}<span class="chip" style="border-color:{c}">'
-                      f'<b style="color:{c}">{e(code)}</b> {e(nm)}<em>{e(tool)}</em>'
-                      f'<i class="dot" style="background:{c}"></i></span>')
-        flow_inner = (
-            f'<div class="flow">{chips}</div>'
-            f'<div class="note">Veri tipine gore dallanma (M01-M03): '
-            f'SHORT&rarr;fastp+SPAdes | LONG&rarr;Filtlong+Flye | HYBRID&rarr;Unicycler. '
-            f'M07-M13 genome.fasta uzerinde paralel karakterizasyon. Renkler modul durumu '
-            f'(<span style="color:#2e7d32">PASS</span> / <span style="color:#ed6c02">WARNING</span> / '
-            f'<span style="color:#757575">NOT_APPLICABLE</span>).</div>'
-        )
-        fig_flow = figure_raw("BacForge pipeline akis semasi (M00&rarr;M18, calisma sirasi)", flow_inner)
+            nm, tool = smap.get(code, (code, ""))
+            tool = tool_override if tool_override is not None else tool
+            return (f'<div class="nd" style="--nc:{c}"><b>{e(code)}</b>'
+                    f'<span>{e(nm)}</span><em>{e(tool)}</em></div>')
+
+        flow_inner = f"""
+<div class="bf">
+  <div class="bf-row"><span class="bf-io">FASTQ / FASTA girdi</span></div>
+  <div class="bf-row">{nd("M00")}</div>
+  <div class="bf-split">veri tipi otomatik dallanma</div>
+  <div class="bf-branch">
+    <div class="bf-lane" data-l="SHORT"><span class="bf-lh sh">SHORT</span>{nd("M01","fastp")}{nd("M03","SPAdes")}</div>
+    <div class="bf-lane" data-l="LONG"><span class="bf-lh lo">LONG</span>{nd("M01","Filtlong")}{nd("M03","Flye")}</div>
+    <div class="bf-lane" data-l="HYBRID"><span class="bf-lh hy">HYBRID</span>{nd("M01","fastp+Filtlong")}{nd("M03","Unicycler")}</div>
+  </div>
+  <div class="bf-merge">&#9679; birlesme &rarr; <b>genome.fasta</b> &nbsp;(+ M02 Taksonomi)</div>
+  <div class="bf-row">{nd("M04")}{nd("M05")}{nd("M06")}</div>
+  <div class="bf-split">genome.fasta uzerinde paralel karakterizasyon</div>
+  <div class="bf-fan">{nd("M07")}{nd("M08")}{nd("M09")}{nd("M10")}{nd("M11")}{nd("M12")}{nd("M13")}</div>
+  <div class="bf-split">karsilastirmali & filogenomik</div>
+  <div class="bf-row">{nd("M14")}{nd("M15")}{nd("M16")}</div>
+  <div class="bf-merge">&#9679; toplama &rarr; rapor</div>
+  <div class="bf-row">{nd("M17")}{nd("M18")}</div>
+</div>
+<div class="note">Renk = modul durumu
+(<b style="color:#2e7d32">PASS</b> / <b style="color:#ed6c02">WARNING</b> /
+<b style="color:#757575">NOT_APPLICABLE</b>). Sema BacForge mimarisine ozgudur:
+tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelpaze &rarr; topla</b>.</div>"""
+        fig_flow = figure_raw("BacForge pipeline mimarisi (dallanma - birlesme - paralel karakterizasyon)", flow_inner)
 
         # ---- M01 QC (fastp.json) ----
         fastp = {}
@@ -281,12 +304,23 @@ class FinalReportExportModule(Module):
                        ["Benzersiz locus_tag", m06s.get("unique_locus_tags")]])
 
         mlst = dash.get("mlst")
+        import re as _re
+        mlst_scheme = mlst_st = None
         mlst_rows = []
         if mlst and len(mlst) >= 3:
-            mlst_rows = [["Sema", mlst[1]], ["ST", mlst[2]]]
-            for i, allele in enumerate(mlst[3:], 1):
-                mlst_rows.append([f"Alel {i}", allele])
-        t_m07 = table("M07 — Suş tiplemesi (MLST)", ["Alan", "Deger"], mlst_rows)
+            mlst_scheme, mlst_st = mlst[1], mlst[2]
+            for tok in mlst[3:]:
+                m = _re.match(r"^(.*?)\(([^)]*)\)\s*$", tok or "")
+                if m:
+                    locus = m.group(1); allele = m.group(2)
+                    locus = locus.split("_", 1)[1] if "_" in locus else locus  # 'Pas_cpn60' -> 'cpn60'
+                    mlst_rows.append([locus, allele])
+                elif tok:
+                    mlst_rows.append([tok, "-"])
+        mlst_head = (f'<p>Şema: <b>{e(mlst_scheme)}</b> &nbsp;|&nbsp; Sekans Tipi (ST): '
+                     f'<b>{e(mlst_st)}</b></p>' if mlst_scheme else '<p class="na">MLST sonucu yok.</p>')
+        t_m07 = mlst_head + table("M07 — MLST alel profili (locus / allele numarası)",
+                                  ["Lokus", "Alel no"], mlst_rows)
 
         amr = dash.get("amr_genes", []) or []
         t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus)",
@@ -317,8 +351,17 @@ class FinalReportExportModule(Module):
                         p.get("virus_score")] for p in prop])
 
         var = dash.get("variants", []) or []
-        t_m13 = table("M13 — Varyantlar (Snippy) — ilk 25", ["Kromozom", "Pozisyon", "Ref", "Alt"],
-                      [[v.get("chrom"), v.get("pos"), v.get("ref"), v.get("alt")] for v in var[:25]])
+        n_coding = sum(1 for v in var if v.get("gene") or v.get("locus_tag"))
+        var_head = (f'<p>Toplam varyant: <b>{len(var)}</b> &nbsp;|&nbsp; kodlayan (CDS) bölgede: '
+                    f'<b>{n_coding}</b>. Referans: en yakın suş (GenBank anotasyonlu).</p>')
+        # Kodlayan (gen/CDS) varyantlari one al -> anlamli
+        var_sorted = sorted(var, key=lambda v: 0 if (v.get("gene") or v.get("locus_tag")) else 1)
+        t_m13 = var_head + table(
+            "M13 — Varyantlar ve CDS etkisi (Snippy, GenBank-anotasyonlu) — ilk 30",
+            ["Contig", "Pozisyon", "Tip", "Ref>Alt", "Gen", "Locus_tag", "CDS etkisi (EFFECT)", "Ürün"],
+            [[v.get("contig"), v.get("pos"), v.get("type"),
+              f"{v.get('ref')}>{v.get('alt')}", v.get("gene") or "—", v.get("locus_tag") or "—",
+              v.get("effect") or "—", (v.get("product") or "")[:40]] for v in var_sorted[:30]])
 
         t_refs = table("Kullanilan araclar ve bilimsel referanslar (DOI)",
                        ["Arac", "Surum", "Amac", "DOI"],
@@ -408,10 +451,21 @@ figure{{margin:12px 0;text-align:center}}
 figure img{{max-width:100%;height:auto;border:1px solid var(--bd);border-radius:8px;background:#fff}}
 figcaption{{font-size:12.5px;color:var(--tx);font-weight:600;margin-top:6px}}
 .figlinks{{margin:6px 0 0;padding-left:20px;font-size:13px}}
-.flow{{display:flex;flex-wrap:wrap;align-items:stretch;gap:4px}}
-.chip{{position:relative;display:flex;flex-direction:column;justify-content:center;background:#fff;border:1.5px solid;border-radius:8px;padding:7px 10px 12px;font-size:11px;min-width:96px}}
-.chip b{{font-family:ui-monospace,monospace;font-size:12px}}
-.chip em{{color:var(--mut);font-style:normal;font-size:10px;display:block;margin-top:2px}}
-.chip .dot{{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:2px}}
-.arw{{align-self:center;color:var(--mut);font-size:15px}}
+/* BacForge'a ozgu akis semasi: dallan -> birles -> yelpaze */
+.bf{{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0}}
+.bf-row{{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}}
+.bf-io{{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut);border:1px dashed var(--line-strong,#b9c1ca);padding:4px 12px;border-radius:20px;background:#eef4f3}}
+.bf-split{{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;position:relative;padding-top:6px}}
+.bf-split::before{{content:"";display:block;width:2px;height:12px;background:var(--pri);margin:0 auto 4px}}
+.bf-branch{{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}}
+.bf-lane{{display:flex;flex-direction:column;gap:6px;align-items:center;padding:8px;border:1px dashed var(--line,#e2e6ea);border-radius:12px;background:#fafcfc}}
+.bf-lh{{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;color:#fff;padding:2px 12px;border-radius:20px}}
+.bf-lh.sh{{background:#2563eb}} .bf-lh.lo{{background:#7c3aed}} .bf-lh.hy{{background:#db2777}}
+.bf-merge{{font-size:12px;color:var(--tx);background:var(--pri);color:#fff;padding:4px 14px;border-radius:20px}}
+.bf-merge b{{font-family:ui-monospace,monospace}}
+.bf-fan{{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:760px;border:1px dashed var(--pri);border-radius:12px;padding:10px;background:#f2faf9}}
+.nd{{display:flex;flex-direction:column;align-items:center;background:#fff;border:2px solid var(--nc,#546e7a);border-radius:9px;padding:6px 10px;min-width:104px;box-shadow:0 1px 2px rgba(0,0,0,.05)}}
+.nd b{{font-family:ui-monospace,monospace;font-size:12px;color:var(--nc,#546e7a)}}
+.nd span{{font-size:11px;font-weight:600;text-align:center}}
+.nd em{{color:var(--mut);font-style:normal;font-size:10px;margin-top:1px}}
 </style></head><body>{body}</body></html>"""

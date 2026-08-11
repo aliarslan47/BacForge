@@ -30,8 +30,7 @@ class SpeciesReferenceIdentificationModule(Module):
     folder = "M05_SPECIES_REFERENCE_IDENTIFICATION"
     enabled_key = "ani"
 
-    LONG_CONTIG_BLAST_TIMEOUT = 120   # sn; buyuk girdi remote'ta calismaz -> hizli dus, 16S'e gec
-    S16_BLAST_TIMEOUT = 900           # 16S kucuk ama NCBI kuyrugu yavas olabilir
+    BLAST_TIMEOUT = 3600              # DAIMA BLAST + sonucu bekle (16S fallback YOK). Uzun bekleme guvenlik siniri.
     MAX_REFS_FETCH = 60               # kesfedilen turden cekilecek tam genom ust siniri
 
     def inputs(self):
@@ -207,16 +206,11 @@ class SpeciesReferenceIdentificationModule(Module):
         r = self.ctx.runner
         t = util.threads(self.ctx)
 
-        # 1) BLAST kimlik: normal (en uzun contig) -> timeout'ta 16S fallback
+        # 1) BLAST kimlik: DAIMA en uzun contig'i NCBI nt'ye blastn + sonucu BEKLE (16S fallback YOK).
         longest = work / "longest_contig.fa"
         self._longest_contig(genome, longest)
         method = "longest_contig_blastn"
-        hits = self._blast(longest, work / "blast_longest.tsv", self.LONG_CONTIG_BLAST_TIMEOUT, r)
-        if hits is None:
-            s16 = self._best_16s(genome, work, "m05")
-            if s16 is not None:
-                method = "16S_blastn_fallback"
-                hits = self._blast(s16, work / "blast_16s.tsv", self.S16_BLAST_TIMEOUT, r)
+        hits = self._blast(longest, work / "blast_longest.tsv", self.BLAST_TIMEOUT, r)
 
         # kraken2 (M02) capraz-kontrol
         kraken_species = self.ctx.detection.get("ncbi_species")
