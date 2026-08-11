@@ -37,6 +37,15 @@
   M05 NCBI datasets ile otomatik closest-5, batch modda M14/15/16 (clinker/Panaroo/IQ-TREE).
 - Kraken2 DB küçük → tür-düzeyi dağıtıyor (M02 WARNING); Bracken eklenebilir.
 
+
+## 2026-08-11 (aksam) — TAM UCTAN-UCA DOGRULANDI (Acinetobacter, katı sözleşme)
+Final re-run: 19 modul, hepsi gercek ciktiyla. M06 Bakta --skip-sorf segfault fix pipeline'da tuttu (gercek GenBank 9.6MB).
+M05 species-agnostic closest-5 gercek (BLAST kimlik + datasets + FastANI; %99.5 ANI). M14 HEDEFLI clinker (AMR+virulans,
+blaOXA-66/ompA...) 5 gercek sinteni HTML (15sn). M16 mash-NJ gercek akrabalik agaci. Statüler dürüst: M02 WARNING (kucuk
+kraken DB), M15 NOT_APPLICABLE (pangenom >=2 ornek). Katı sözleşme: tool exit 0 + gercek cikti yoksa PASS yok; mock fallback'ler silindi.
+Koşu: runs/20260811_165209_short. commit d7014fd.
+BILINEN: M05 uzun-contig remote BLAST timeout'ta conda-run torunu (blastn) orphan kaliyor -> surec-grubu ile oldurulmeli (temizlik).
+
 ## Notlar
 - Referans seti: `databases/references/acinetobacter/GCF_000015425_ATCC17978.fna` (M05 buradan FastANI).
 - **FAJ YOLU PLANLI (kullanıcı 2026-08-11): faj analizini DE yapacağız → SİLME.** Faj DB'leri
