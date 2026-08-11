@@ -1,10 +1,11 @@
 """M18 -- Final Report, Scientific References & Complete Export
-GERÇEK dashboard verisinden HTML rapor üretir. KURAL: sabit-kodlu/uydurma sonuç YOK.
-Üretilmemiş veriler 'Analiz yapılmadı (NA)' / 'Bulgu yok' olarak dürüstçe gösterilir.
-Araç referansları (DOI) platform tool-registry'sidir; per-run sürümler provenance dosyalarındadır.
+GERCEK dashboard verisinden HTML rapor uretir. KURAL: sabit-kodlu/uydurma sonuc YOK.
+Rapor PIPELINE CALISMA SIRASINA gore (M00->M18) yazilir; en basta pipeline akis semasi (Figure 1);
+her cikti numarali Table/Figure olarak verilir (genom haritasi + filogeni agaci gomulu PNG, clinker HTML baglantili).
 """
 from __future__ import annotations
 
+import base64
 import html
 import json
 import os
@@ -53,14 +54,28 @@ class FinalReportExportModule(Module):
         {"tool": "IQ-TREE2", "version": "2.2.2", "purpose": "Maximum likelihood phylogenomics", "repo": "https://github.com/iqtree/iqtree2", "doi": "10.1093/molbev/msaa015"},
     ]
 
-    MODULE_NAMES = {
-        "M00": "Input & Data Detection", "M01": "Read QC", "M02": "Taxonomic QC",
-        "M03": "Genome Assembly", "M04": "Polishing & Genome QC", "M05": "Species & Reference ID",
-        "M06": "Genome Annotation", "M07": "Strain Typing", "M08": "AMR", "M09": "Virulence",
-        "M10": "Plasmids", "M11": "Mobile Genetic Elements", "M12": "Phage/CRISPR/Defense",
-        "M13": "Variants", "M14": "Genomic Context", "M15": "Comparative Genomics",
-        "M16": "Phylogenomics", "M17": "Statistics", "M18": "Report",
-    }
+    # (kod, ad, arac) — pipeline calisma sirasi
+    PIPELINE_STEPS = [
+        ("M00", "Input & Detection", "auto-detect"),
+        ("M01", "Read QC", "fastp / Filtlong"),
+        ("M02", "Taxonomic QC", "Kraken2"),
+        ("M03", "Assembly", "SPAdes / Flye / Unicycler"),
+        ("M04", "Polishing & QC", "QUAST + CheckM2"),
+        ("M05", "Species & Closest-N", "BLAST + FastANI"),
+        ("M06", "Annotation", "Bakta"),
+        ("M07", "Strain Typing", "mlst"),
+        ("M08", "AMR", "AMRFinderPlus"),
+        ("M09", "Virulence", "VFDB/ABRicate"),
+        ("M10", "Plasmids", "MOB-suite"),
+        ("M11", "Mobile Elements", "ISEScan"),
+        ("M12", "Phage/CRISPR", "geNomad"),
+        ("M13", "Variants", "Snippy"),
+        ("M14", "Genomic Context", "clinker"),
+        ("M15", "Comparative", "Panaroo"),
+        ("M16", "Phylogenomics", "mash + NJ"),
+        ("M17", "Statistics", "aggregate"),
+        ("M18", "Report", "export"),
+    ]
 
     def inputs(self):
         return [self.ctx.run_dir / "M17_STATISTICS_VISUALIZATION" / "dashboard_data.json"]
@@ -84,7 +99,7 @@ class FinalReportExportModule(Module):
 
         report_path = std_dir / "report.html"
         with open(report_path, "w", encoding="utf-8") as fh:
-            fh.write(self._build_html_report(dash_data))
+            fh.write(self._build_html_report(dash_data, run_dir))
 
         # PROJECT_COMPLETE bundle + zip
         export_dir = self.sub_dir("02_work") / "PROJECT_COMPLETE"
@@ -110,164 +125,293 @@ class FinalReportExportModule(Module):
             details={"export_zip": str(zip_path), "report": str(report_path)},
         )
 
-    # ---- yardımcılar ----
+    # ---------- yardimcilar ----------
     @staticmethod
     def _esc(v):
         return html.escape(str(v)) if v is not None else "&mdash;"
 
-    def _na_or(self, status: str, body_html: str, reason: str = "") -> str:
-        """Modül NA/SKIPPED ise dürüst not; değilse gerçek içerik."""
-        if status in ("NOT_APPLICABLE", "SKIPPED"):
-            r = f" — {self._esc(reason)}" if reason else ""
-            return f'<p class="na">Analiz uygulanmadı ({self._esc(status)}){r}</p>'
-        if status == "FAIL":
-            return '<p class="fail">Modül başarısız (FAIL). Ayrıntı için modül loglarına bakın.</p>'
-        return body_html
+    @staticmethod
+    def _img_b64(path: Path) -> str | None:
+        try:
+            if path.exists() and path.stat().st_size > 0:
+                return base64.b64encode(path.read_bytes()).decode("ascii")
+        except Exception:
+            pass
+        return None
 
-    def _build_html_report(self, dash: dict) -> str:
+    def _build_html_report(self, dash: dict, run_dir: Path) -> str:
         e = self._esc
         mstat = dash.get("module_status", {}) or {}
         mods = dash.get("modules", {}) or {}
+        st = lambda m: mstat.get(m, "—")
+        reason = lambda m: (mods.get(m, {}) or {}).get("details", {}).get("reason", "")
+        modstat = lambda m: (mods.get(m, {}) or {}).get("statistics", {}) or {}
 
-        def st(m):
-            return mstat.get(m, "—")
+        counters = {"t": 0, "f": 0}
 
-        def reason(m):
-            return (mods.get(m, {}) or {}).get("details", {}).get("reason", "")
+        def table(caption, headers, rows):
+            counters["t"] += 1
+            n = counters["t"]
+            if not rows:
+                return (f'<div class="cap">Table {n}. {e(caption)}</div>'
+                        f'<p class="na">Veri yok / analiz uygulanmadi.</p>')
+            head = "".join(f"<th>{e(h)}</th>" for h in headers)
+            body = "".join("<tr>" + "".join(f"<td>{e(c)}</td>" for c in r) + "</tr>" for r in rows)
+            return (f'<div class="cap">Table {n}. {e(caption)}</div>'
+                    f'<div class="tw"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>')
 
-        species = dash.get("species")
+        def figure_img(caption, path, note=""):
+            counters["f"] += 1
+            n = counters["f"]
+            b64 = self._img_b64(path)
+            if not b64:
+                return f'<div class="cap">Figure {n}. {e(caption)}</div><p class="na">Figur uretilmedi.</p>'
+            nt = f'<div class="note">{e(note)}</div>' if note else ""
+            return (f'<figure><img src="data:image/png;base64,{b64}" alt="{e(caption)}"/>'
+                    f'<figcaption>Figure {n}. {e(caption)}</figcaption></figure>{nt}')
+
+        def figure_links(caption, items):
+            # items: [(label, relpath)]
+            counters["f"] += 1
+            n = counters["f"]
+            if not items:
+                return f'<div class="cap">Figure {n}. {e(caption)}</div><p class="na">Uretilmedi.</p>'
+            li = "".join(f'<li><a href="{e(rel)}" target="_blank">{e(lbl)}</a></li>' for lbl, rel in items)
+            return (f'<div class="cap">Figure {n}. {e(caption)}</div>'
+                    f'<ul class="figlinks">{li}</ul>')
+
+        def figure_raw(caption, inner_html):
+            counters["f"] += 1
+            n = counters["f"]
+            return f'<figure>{inner_html}<figcaption>Figure {n}. {e(caption)}</figcaption></figure>'
+
+        # ---- veriler ----
+        species = dash.get("species") or "Belirlenemedi"
         gs = dash.get("genome_stats", {}) or {}
         cm = dash.get("checkm2", {}) or {}
         tax = dash.get("taxonomy", {}) or {}
-
-        # Modül durum ızgarası
-        color = {"PASS": "#4ade80", "WARNING": "#fbbf24", "NOT_APPLICABLE": "#94a3b8",
-                 "SKIPPED": "#94a3b8", "FAIL": "#f87171"}
-        status_cells = ""
-        for m in [f"M{i:02d}" for i in range(0, 19)]:
-            s = st(m)
-            c = color.get(s, "#64748b")
-            status_cells += (f'<div class="mcell"><span class="mnum">{m}</span>'
-                             f'<span class="mname">{e(self.MODULE_NAMES.get(m, ""))}</span>'
-                             f'<span class="mstat" style="color:{c}">{e(s)}</span></div>')
-
-        # CheckM2 (gerçek ya da hesaplanmadı)
-        comp = cm.get("completeness")
-        cont = cm.get("contamination")
-        checkm_html = (f"CheckM2 Completeness: <strong>{e(comp)}%</strong> | Contamination: "
-                       f"<strong>{e(cont)}%</strong> | Quality: <strong>{e(gs.get('quality_status'))}</strong>"
-                       if comp is not None else
-                       f'<span class="na">CheckM2 çalışmadı — completeness/contamination hesaplanmadı. '
-                       f'{e(cm.get("note"))}</span>')
-
-        # Closest-5 tablo
-        c5 = dash.get("closest_5_strains", []) or []
-        if c5:
-            c5_rows = "".join(
-                f"<tr><td>#{e(c.get('rank'))}</td><td>{e(c.get('organism'))}</td>"
-                f"<td>{e(c.get('strain'))}</td><td>{e(c.get('ani_percent'))}</td>"
-                f"<td>{e(c.get('query_coverage'))}</td></tr>" for c in c5)
-            c5_html = (f'<table><thead><tr><th>Rank</th><th>Organism</th><th>Strain/Accession</th>'
-                       f'<th>ANI %</th><th>Query Cov %</th></tr></thead><tbody>{c5_rows}</tbody></table>')
-        else:
-            c5_html = self._na_or(st("M05"), '<p class="na">Closest-5 hesaplanmadı.</p>',
-                                  reason("M05") or (mods.get("M05", {}).get("details", {}).get("closest_5_note", "")))
-
-        # MLST
-        mlst = dash.get("mlst")
-        if mlst and len(mlst) >= 3:
-            mlst_html = f"Şema: <strong>{e(mlst[1])}</strong> | ST: <strong>{e(mlst[2])}</strong>"
-        else:
-            mlst_html = '<p class="na">MLST sonucu yok.</p>'
-
-        # AMR tablo
-        amr = dash.get("amr_genes", []) or []
-        if amr:
-            amr_rows = "".join(
-                f"<tr><td>{e(a.get('gene_symbol'))}</td><td>{e(a.get('drug_class'))}</td>"
-                f"<td>{e(a.get('identity'))}</td><td>{e(a.get('contig'))}</td></tr>" for a in amr)
-            amr_html = (f'<table><thead><tr><th>Gene</th><th>Drug Class</th><th>Identity</th>'
-                        f'<th>Contig</th></tr></thead><tbody>{amr_rows}</tbody></table>')
-        else:
-            amr_html = ('<p>AMRFinderPlus çalıştı; direnç geni bulunamadı (bulgu yok).</p>'
-                        if st("M08") == "PASS" else self._na_or(st("M08"), "", reason("M08")))
-
-        def count_section(m, items, label, tool):
-            n = len(items)
-            if st(m) == "PASS":
-                return f"{tool} çalıştı — {e(label)}: <strong>{n}</strong>" + ("" if n else " (bulgu yok)")
-            return self._na_or(st(m), f"{tool}: <strong>{n}</strong>", reason(m))
-
-        vir_html = count_section("M09", dash.get("virulence_genes", []), "virülans geni", "VFDB/abricate")
-        plas_html = count_section("M10", dash.get("plasmids", []), "plazmid", "MOB-suite")
-        mge_html = count_section("M11", dash.get("mobile_elements", []), "MGE", "ISEScan")
-        phage_html = count_section("M12", dash.get("prophages", []), "prophage", "geNomad")
-        var_html = count_section("M13", dash.get("variants", []), "varyant (SNP)", "Snippy")
-
-        ref_rows = "".join(
-            f"<tr><td><strong>{e(t['tool'])}</strong></td><td>{e(t['version'])}</td>"
-            f"<td>{e(t['purpose'])}</td><td><a href='https://doi.org/{e(t['doi'])}' target='_blank'>{e(t['doi'])}</a></td></tr>"
-            for t in self.TOOL_REFERENCES)
-
         project_id = dash.get("project_id", "run")
         data_type = dash.get("data_type")
         platform = dash.get("platform")
-        species_disp = species if species else "Belirlenemedi"
 
-        return f"""<!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8">
-<title>Bacterial WGS Report — {e(project_id)}</title>
+        color = {"PASS": "#2e7d32", "WARNING": "#ed6c02", "NOT_APPLICABLE": "#757575",
+                 "SKIPPED": "#757575", "FAIL": "#c62828"}
+
+        # ---- Figure 1: pipeline akis semasi ----
+        chips = ""
+        for i, (code, nm, tool) in enumerate(self.PIPELINE_STEPS):
+            c = color.get(st(code), "#546e7a")
+            arrow = "" if i == 0 else '<span class="arw">&rarr;</span>'
+            chips += (f'{arrow}<span class="chip" style="border-color:{c}">'
+                      f'<b style="color:{c}">{e(code)}</b> {e(nm)}<em>{e(tool)}</em>'
+                      f'<i class="dot" style="background:{c}"></i></span>')
+        flow_inner = (
+            f'<div class="flow">{chips}</div>'
+            f'<div class="note">Veri tipine gore dallanma (M01-M03): '
+            f'SHORT&rarr;fastp+SPAdes | LONG&rarr;Filtlong+Flye | HYBRID&rarr;Unicycler. '
+            f'M07-M13 genome.fasta uzerinde paralel karakterizasyon. Renkler modul durumu '
+            f'(<span style="color:#2e7d32">PASS</span> / <span style="color:#ed6c02">WARNING</span> / '
+            f'<span style="color:#757575">NOT_APPLICABLE</span>).</div>'
+        )
+        fig_flow = figure_raw("BacForge pipeline akis semasi (M00&rarr;M18, calisma sirasi)", flow_inner)
+
+        # ---- M01 QC (fastp.json) ----
+        fastp = {}
+        fp = run_dir / "M01_READ_QC_PREPROCESSING" / "fastp.json"
+        if fp.exists():
+            try:
+                fastp = json.load(open(fp))
+            except Exception:
+                fastp = {}
+        bf = (fastp.get("summary", {}) or {}).get("before_filtering", {})
+        af = (fastp.get("summary", {}) or {}).get("after_filtering", {})
+
+        # ---- annotation counts (M06 summary) ----
+        m06s = modstat("M06")
+
+        # ---- figur dosya yollari (run icine gore relatif; rapor M18/04_standardized'da) ----
+        # rapor std_dir icinde; run koku iki ust
+        def rel(p: Path):
+            try:
+                return os.path.relpath(p, run_dir / "M18_REPORT_EXPORT")
+            except Exception:
+                return str(p)
+
+        genome_map = run_dir / "M06_GENOME_ANNOTATION" / "genome_map.png"
+        tree_png = run_dir / "M16_PHYLOGENOMICS" / "phylogeny_tree.png"
+        clinker_htmls = sorted((run_dir / "M14_GENOMIC_CONTEXT").glob("clinker_*.html"))
+        fastp_html = run_dir / "M01_READ_QC_PREPROCESSING" / "fastp_report.html"
+
+        # ---- tablolar (calisma sirasi) ----
+        t_m00 = table("M00 — Girdi tespiti ve okuma istatistikleri",
+                      ["Metrik", "Deger"],
+                      [["Veri tipi", data_type], ["Platform", platform],
+                       ["Tespit edilen tur (kraken2)", tax.get("dominant_organism")]])
+
+        qc_rows = []
+        if bf or af:
+            qc_rows = [["Okuma (ham)", bf.get("total_reads")], ["Okuma (temiz)", af.get("total_reads")],
+                       ["Baz (temiz)", af.get("total_bases")], ["Ort. okuma uzunlugu",
+                        af.get("read1_mean_length")], ["Q30 orani", af.get("q30_rate")]]
+        t_m01 = table("M01 — Okuma QC (fastp, once/sonra)", ["Metrik", "Deger"], qc_rows)
+
+        t_m02 = table("M02 — Taksonomik QC (Kraken2)", ["Metrik", "Deger"],
+                      [["Baskin organizma", tax.get("dominant_organism")],
+                       ["Taxonomy ID", tax.get("taxonomy_id")],
+                       ["Baskinlik (siniflanan turler icinde)", tax.get("dominance_percent_of_classified_species")],
+                       ["Kontaminasyon tahmini %", tax.get("contamination_percent")]])
+
+        t_m04 = table("M03/M04 — Assembly ve genom kalitesi (SPAdes + QUAST + CheckM2)",
+                      ["Metrik", "Deger"],
+                      [["Genom boyutu (bp)", gs.get("genome_size_bp")], ["Contig", gs.get("contig_count")],
+                       ["N50", gs.get("n50")], ["En uzun contig", gs.get("largest_contig")],
+                       ["GC %", gs.get("gc_percent")], ["Completeness % (CheckM2)", cm.get("completeness")],
+                       ["Contamination % (CheckM2)", cm.get("contamination")],
+                       ["Kalite durumu", gs.get("quality_status")]])
+
+        c5 = dash.get("closest_5_strains", []) or []
+        t_m05 = table("M05 — En yakin referanslar (FastANI)",
+                      ["Rank", "Organizma", "Accession", "ANI %", "Query cov %"],
+                      [[c.get("rank"), c.get("organism"), c.get("assembly_accession"),
+                        c.get("ani_percent"), c.get("query_coverage")] for c in c5])
+
+        t_m06 = table("M06 — Genom anotasyonu (Bakta)", ["Ozellik", "Sayi"],
+                      [["CDS", m06s.get("cds")], ["tRNA", m06s.get("trna")], ["rRNA", m06s.get("rrna")],
+                       ["Toplam ozellik", m06s.get("total_features")],
+                       ["Benzersiz locus_tag", m06s.get("unique_locus_tags")]])
+
+        mlst = dash.get("mlst")
+        mlst_rows = []
+        if mlst and len(mlst) >= 3:
+            mlst_rows = [["Sema", mlst[1]], ["ST", mlst[2]]]
+            for i, allele in enumerate(mlst[3:], 1):
+                mlst_rows.append([f"Alel {i}", allele])
+        t_m07 = table("M07 — Suş tiplemesi (MLST)", ["Alan", "Deger"], mlst_rows)
+
+        amr = dash.get("amr_genes", []) or []
+        t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus)",
+                      ["Gen", "Ilac sinifi", "Alt sinif", "Identity %", "Contig"],
+                      [[a.get("gene_symbol"), a.get("drug_class"), a.get("subclass"),
+                        a.get("identity"), a.get("contig")] for a in amr])
+
+        vir = dash.get("virulence_genes", []) or []
+        t_m09 = table("M09 — Virülans genleri (VFDB/ABRicate) — ilk 25",
+                      ["Gen", "Identity %", "Coverage", "Contig"],
+                      [[v.get("gene_symbol"), v.get("identity"), v.get("coverage"), v.get("contig")]
+                       for v in vir[:25]])
+
+        plas = dash.get("plasmids", []) or []
+        t_m10 = table("M10 — Plazmidler (MOB-suite)", ["Plasmid", "Contig", "Boyut", "Rep tipi"],
+                      [[p.get("plasmid_id"), p.get("contig"), p.get("size"), p.get("rep_type")] for p in plas])
+
+        mge = dash.get("mobile_elements", []) or []
+        t_m11 = table("M11 — Mobil genetik elemanlar (ISEScan) — ilk 25",
+                      ["Eleman", "Tip", "Contig", "Baslangic", "Bitis"],
+                      [[m.get("element_id"), m.get("type"), m.get("contig"), m.get("start"), m.get("end")]
+                       for m in mge[:25]])
+
+        prop = dash.get("prophages", []) or []
+        t_m12 = table("M12 — Prophage/viral bolgeler (geNomad)",
+                      ["Phage ID", "Contig", "Uzunluk", "Topoloji", "Virus skoru"],
+                      [[p.get("phage_id"), p.get("contig"), p.get("length"), p.get("topology"),
+                        p.get("virus_score")] for p in prop])
+
+        var = dash.get("variants", []) or []
+        t_m13 = table("M13 — Varyantlar (Snippy) — ilk 25", ["Kromozom", "Pozisyon", "Ref", "Alt"],
+                      [[v.get("chrom"), v.get("pos"), v.get("ref"), v.get("alt")] for v in var[:25]])
+
+        t_refs = table("Kullanilan araclar ve bilimsel referanslar (DOI)",
+                       ["Arac", "Surum", "Amac", "DOI"],
+                       [[t["tool"], t["version"], t["purpose"], t["doi"]] for t in self.TOOL_REFERENCES])
+
+        # ---- figurler ----
+        fig_qc = figure_links("Okuma QC raporu (fastp, interaktif)",
+                              [("fastp_report.html", rel(fastp_html))] if fastp_html.exists() else [])
+        fig_map = figure_img("Dairesel genom haritasi ve anotasyon (Bakta)", genome_map)
+        clinker_items = [(p.stem.replace("clinker_", "clinker: "), rel(p)) for p in clinker_htmls]
+        fig_clink = figure_links("Hedefli AMR/virülans lokuslari — gen-komsulugu sinteni (clinker, interaktif)",
+                                 clinker_items)
+        fig_tree = figure_img("Akrabalik agaci — sorgu + en yakin referanslar (mash mesafe + Neighbor-Joining)",
+                              tree_png, note="Dal uzunluklari mash genom-geneli mesafe ile orantilidir.")
+
+        def na(m):
+            return self._na_note(st(m), reason(m))
+
+        sec = lambda code, title, body: (
+            f'<section><h2><span class="mc" style="color:{color.get(st(code), "#546e7a")}">{code}</span> '
+            f'{e(title)} <span class="badge" style="background:{color.get(st(code),"#546e7a")}">{e(st(code))}</span></h2>{body}</section>')
+
+        body = f"""
+<header>
+  <h1>Bakteriyel WGS Analiz Raporu</h1>
+  <p class="sub">Proje: <b>{e(project_id)}</b> &nbsp;|&nbsp; Tur: <b>{e(species)}</b>
+   &nbsp;|&nbsp; Veri tipi: <b>{e(data_type)}</b> &nbsp;|&nbsp; Platform: <b>{e(platform)}</b></p>
+</header>
+
+<section><h2>Pipeline Akis Semasi</h2>{fig_flow}</section>
+
+{sec("M00","Girdi & Otomatik Tespit", t_m00)}
+{sec("M01","Okuma QC & Preprocessing", t_m01 + fig_qc + na("M01"))}
+{sec("M02","Taksonomik QC", t_m02 + na("M02"))}
+{sec("M04","Assembly, Polishing & Genom Kalitesi", t_m04 + na("M04"))}
+{sec("M05","Tur & En Yakin Referanslar", t_m05 + na("M05"))}
+{sec("M06","Genom Anotasyonu", t_m06 + fig_map + na("M06"))}
+{sec("M07","Suş Tiplemesi (MLST)", t_m07 + na("M07"))}
+{sec("M08","Antimikrobiyal Direnç", t_m08 + na("M08"))}
+{sec("M09","Virülans", t_m09 + na("M09"))}
+{sec("M10","Plazmidler", t_m10 + na("M10"))}
+{sec("M11","Mobil Genetik Elemanlar", t_m11 + na("M11"))}
+{sec("M12","Phage / CRISPR / Defense", t_m12 + na("M12"))}
+{sec("M13","Varyantlar & Mutasyonlar", t_m13 + na("M13"))}
+{sec("M14","Genomik Baglam (Hedefli clinker)", fig_clink + na("M14"))}
+{sec("M15","Karsilastirmali Genomik", na("M15"))}
+{sec("M16","Filogenomik (Akrabalik Agaci)", fig_tree + na("M16"))}
+{sec("M18","Araclar, Veritabanlari & Bilimsel Referanslar", t_refs)}
+"""
+        return self._wrap(project_id, body)
+
+    def _na_note(self, status, reason):
+        if status in ("NOT_APPLICABLE", "SKIPPED"):
+            r = f" — {self._esc(reason)}" if reason else ""
+            return f'<p class="na">Analiz uygulanmadi ({self._esc(status)}){r}</p>'
+        if status == "FAIL":
+            return '<p class="fail">Modul basarisiz (FAIL).</p>'
+        return ""
+
+    @staticmethod
+    def _wrap(project_id, body):
+        pid = html.escape(str(project_id))
+        return f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bacterial WGS Report — {pid}</title>
 <style>
-:root{{--bg:#0f172a;--card:#1e293b;--bd:#334155;--pri:#38bdf8;--tx:#f8fafc;--mut:#94a3b8}}
-body{{font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx);margin:0;padding:28px;line-height:1.5}}
-h1{{color:var(--pri);margin:0 0 6px;font-size:26px}}
-.sub{{color:var(--mut);font-size:13px;margin:0 0 22px}}
-.section{{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 22px;margin-bottom:18px}}
-.section h2{{margin:0 0 10px;color:var(--pri);font-size:17px;border-bottom:1px solid var(--bd);padding-bottom:6px}}
-table{{width:100%;border-collapse:collapse;margin-top:8px}}
-th,td{{text-align:left;padding:7px 10px;border-bottom:1px solid var(--bd);font-size:13px}}
-th{{background:#0f172a;color:var(--pri)}}
+:root{{--bg:#f6f7f9;--card:#fff;--bd:#e2e6ea;--pri:#0d8f86;--tx:#14181d;--mut:#6b7682}}
+*{{box-sizing:border-box}}
+body{{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx);margin:0;padding:32px;line-height:1.55}}
+header{{border-bottom:2px solid var(--bd);padding-bottom:16px;margin-bottom:24px}}
+h1{{color:var(--pri);margin:0 0 6px;font-size:27px}}
+.sub{{color:var(--mut);font-size:13px;margin:0}}
+section{{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 22px;margin-bottom:16px}}
+h2{{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:10px}}
+.mc{{font-family:ui-monospace,monospace;font-weight:700}}
+.badge{{margin-left:auto;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;font-family:ui-monospace,monospace}}
+.cap{{font-weight:600;font-size:13px;margin:14px 0 4px;color:var(--tx)}}
+.tw{{overflow-x:auto}}
+table{{width:100%;border-collapse:collapse;margin-bottom:4px}}
+th,td{{text-align:left;padding:6px 10px;border-bottom:1px solid var(--bd);font-size:12.5px;font-variant-numeric:tabular-nums}}
+th{{background:#eef4f3;color:var(--pri)}}
 a{{color:var(--pri)}}
-.na{{color:var(--mut);font-style:italic}}
-.fail{{color:#f87171;font-weight:600}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}}
-.mcell{{background:#0f172a;border:1px solid var(--bd);border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}}
-.mnum{{font-family:monospace;color:var(--pri);font-weight:600;font-size:12px}}
-.mname{{font-size:11px;color:var(--mut)}}
-.mstat{{font-family:monospace;font-size:12px;font-weight:600}}
-.note{{color:var(--mut);font-size:11px;margin-top:14px}}
-</style></head><body>
-<h1>Bakteriyel WGS Analiz Raporu</h1>
-<p class="sub">Proje: <strong>{e(project_id)}</strong> &nbsp;|&nbsp; Tür: <strong>{e(species_disp)}</strong>
- &nbsp;|&nbsp; Veri tipi: <strong>{e(data_type)}</strong> &nbsp;|&nbsp; Platform: <strong>{e(platform)}</strong></p>
-
-<div class="section"><h2>Modül Durumları (gerçek)</h2><div class="grid">{status_cells}</div>
-<p class="note">Her durum modülün kendi çalıştırmasından gelir. NOT_APPLICABLE = analiz koşulları oluşmadı (uydurma değil).</p></div>
-
-<div class="section"><h2>Taksonomik QC (M02)</h2>
-{self._na_or(st('M02'), f"Baskın organizma: <strong>{e(tax.get('dominant_organism'))}</strong> (taxid {e(tax.get('taxonomy_id'))}) | Kontaminasyon tahmini: <strong>{e(tax.get('contamination_percent'))}%</strong>", reason('M02'))}</div>
-
-<div class="section"><h2>Assembly İstatistikleri (M03/M04)</h2>
-Genom boyutu: <strong>{e(gs.get('genome_size_bp'))} bp</strong> | Contig: <strong>{e(gs.get('contig_count'))}</strong> |
-N50: <strong>{e(gs.get('n50'))}</strong> | En uzun: <strong>{e(gs.get('largest_contig'))}</strong> | GC: <strong>{e(gs.get('gc_percent'))}%</strong>
-<br><span class="note">Polishing: {e(gs.get('polishing_note'))}</span></div>
-
-<div class="section"><h2>Genom Kalitesi — CheckM2 (M04)</h2>{checkm_html}</div>
-
-<div class="section"><h2>Tür & En Yakın Referanslar (M05)</h2>{c5_html}</div>
-
-<div class="section"><h2>Suş Tiplemesi — MLST (M07)</h2>{mlst_html}</div>
-
-<div class="section"><h2>Antimikrobiyal Direnç (M08)</h2>{amr_html}</div>
-
-<div class="section"><h2>Virülans (M09)</h2><p>{vir_html}</p></div>
-<div class="section"><h2>Plazmidler (M10)</h2><p>{plas_html}</p></div>
-<div class="section"><h2>Mobil Genetik Elemanlar (M11)</h2><p>{mge_html}</p></div>
-<div class="section"><h2>Phage / CRISPR / Defense (M12)</h2><p>{phage_html}</p></div>
-<div class="section"><h2>Varyantlar (M13)</h2><p>{var_html}</p></div>
-
-<div class="section"><h2>Araç Referansları & DOI</h2>
-<p class="note">Bu tablo platformun araç kayıt defteridir (doğrulanmış DOI'ler). Bu çalıştırmada fiilen
-kullanılan araçların sürümleri her modülün <code>*.provenance.json</code> dosyalarındadır.</p>
-<table><thead><tr><th>Araç</th><th>Sürüm</th><th>Amaç</th><th>DOI</th></tr></thead><tbody>{ref_rows}</tbody></table></div>
-</body></html>"""
+.na{{color:var(--mut);font-style:italic;font-size:13px}}
+.fail{{color:#c62828;font-weight:600}}
+.note{{color:var(--mut);font-size:11.5px;margin-top:8px}}
+figure{{margin:12px 0;text-align:center}}
+figure img{{max-width:100%;height:auto;border:1px solid var(--bd);border-radius:8px;background:#fff}}
+figcaption{{font-size:12.5px;color:var(--tx);font-weight:600;margin-top:6px}}
+.figlinks{{margin:6px 0 0;padding-left:20px;font-size:13px}}
+.flow{{display:flex;flex-wrap:wrap;align-items:stretch;gap:4px}}
+.chip{{position:relative;display:flex;flex-direction:column;justify-content:center;background:#fff;border:1.5px solid;border-radius:8px;padding:7px 10px 12px;font-size:11px;min-width:96px}}
+.chip b{{font-family:ui-monospace,monospace;font-size:12px}}
+.chip em{{color:var(--mut);font-style:normal;font-size:10px;display:block;margin-top:2px}}
+.chip .dot{{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:2px}}
+.arw{{align-self:center;color:var(--mut);font-size:15px}}
+</style></head><body>{body}</body></html>"""

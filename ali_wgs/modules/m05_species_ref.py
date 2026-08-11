@@ -9,8 +9,10 @@ KATI: hicbir sey uydurulmaz. Kimlik bulunamazsa WARNING; referans cekilemezse cl
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
+import signal
 import subprocess
 import zipfile
 from collections import Counter
@@ -41,6 +43,23 @@ class SpeciesReferenceIdentificationModule(Module):
     # ---------- yardimcilar ----------
     def _conda(self, env, cmd):
         return ["conda", "run", "-n", env] + cmd
+
+    @staticmethod
+    def _killpg(proc):
+        """Bir surecin TUM surec-grubunu oldur (conda-run + torunlari) -> orphan kalmaz."""
+        if proc is None:
+            return
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        try:
+            proc.wait(timeout=10)
+        except Exception:
+            pass
 
     def _longest_contig(self, genome: Path, out: Path) -> int:
         seqs = util.read_fasta(genome)
@@ -85,14 +104,26 @@ class SpeciesReferenceIdentificationModule(Module):
         return out
 
     def _blast(self, query_fa: Path, out_tsv: Path, timeout: int, runner) -> list | None:
-        """remote blastn; timeout/hata -> None. Basari -> parse edilmis satirlar."""
+        """remote blastn; timeout/hata -> None. Basari -> parse edilmis satirlar.
+        KRITIK: kendi surec-grubunda baslatilir (start_new_session); timeout'ta TUM grup oldurulur
+        (os.killpg) -> `conda run` torunu blastn ORPHAN kalmaz (eski hata)."""
         cmd = self._conda(util.ENV.get("blast", "base"),
                           ["blastn", "-query", str(query_fa), "-db", "nt", "-remote",
                            "-outfmt", BLAST_FMT, "-max_target_seqs", "10"])
+        proc = None
         try:
             with open(out_tsv, "w") as fh:
-                subprocess.run(cmd, stdout=fh, stderr=subprocess.DEVNULL, timeout=timeout, check=True)
+                proc = subprocess.Popen(cmd, stdout=fh, stderr=subprocess.DEVNULL,
+                                        start_new_session=True)
+                try:
+                    rc = proc.wait(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    self._killpg(proc)
+                    return None
+            if rc != 0:
+                return None
         except Exception:
+            self._killpg(proc)
             return None
         rows = []
         for line in out_tsv.read_text(encoding="utf-8").splitlines():
@@ -102,13 +133,22 @@ class SpeciesReferenceIdentificationModule(Module):
         return rows or None
 
     def _datasets(self, args: list, timeout: int, capture=False):
-        """datasets base env'de kurulu; PATH'te varsa dogrudan, yoksa `conda run -n base`."""
+        """datasets base env'de kurulu; PATH'te varsa dogrudan, yoksa `conda run -n base`.
+        Surec-grubu ile calistirilir; timeout'ta tum grup oldurulur (orphan kalmaz)."""
         for c in ([args] if shutil.which(args[0]) else []) + [["conda", "run", "-n", "base"] + args]:
+            proc = None
             try:
-                rr = subprocess.run(c, capture_output=True, text=True, timeout=timeout)
-                if rr.returncode == 0:
-                    return rr.stdout if capture else True
+                proc = subprocess.Popen(c, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                        text=True, start_new_session=True)
+                try:
+                    out, _ = proc.communicate(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    self._killpg(proc)
+                    continue
+                if proc.returncode == 0:
+                    return out if capture else True
             except Exception:
+                self._killpg(proc)
                 continue
         return None if capture else False
 
