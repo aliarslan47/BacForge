@@ -93,8 +93,8 @@ class SpeciesReferenceIdentificationModule(Module):
                 fh.write(f"{rank}\t{name}\t{L}\t{fn}\t{elig}\n")
         # klasore kullanim notu
         (contigs_dir / "README.txt").write_text(
-            "Her contig ayri FASTA (manuel/dogrulama BLAST icin). Toplu dizi: "
-            "../../M04_POLISHING_GENOME_QC/genome.fasta (degistirilmez).\n"
+            "Her contig ayri FASTA (manuel yukleme / web BLAST icin). Toplu (ana) dizi: "
+            f"../{genome.name} (degistirilmez).\n"
             "Ornek manuel BLAST:\n"
             "  conda run -n ali-blast blastn -query <contig>.fasta -db nt -remote \\\n"
             "    -outfmt '6 sacc pident length evalue bitscore staxids sscinames stitle' -max_target_seqs 5\n"
@@ -258,9 +258,16 @@ class SpeciesReferenceIdentificationModule(Module):
         r = self.ctx.runner
         t = util.threads(self.ctx)
 
-        # 0) Her contig'i ayri FASTA + uzunluk tablosu (manuel BLAST icin; toplu genome.fasta'ya dokunmaz)
-        contigs_dir = self.out_dir / "contigs_for_blast"
-        contig_lens = self._export_per_contig(genome, contigs_dir, std_dir)
+        # 0) Her contig'i ayri FASTA + uzunluk tablosu -> ANA contig dosyasinin (genome.fasta) yaninda
+        #    `contigs/` altina (manuel yukleme/web BLAST icin kolay erisim). Toplu genome.fasta'ya DOKUNULMAZ.
+        contigs_dir = genome.parent / "contigs"
+        contig_lens = self._export_per_contig(genome, contigs_dir, contigs_dir)
+        # rapor plumbing icin uzunluk tablosunun bir kopyasi M05 std_dir'de de dursun
+        try:
+            (std_dir / "contig_lengths.tsv").write_text(
+                (contigs_dir / "contig_lengths.tsv").read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
 
         # 1) BLAST kimlik: 1Mb ALTINDAKI en uzun contig'i NCBI nt'ye blastn + sonucu BEKLE (16S fallback YOK).
         #    (>1Mb contig remote nt BLAST'ta takilir/timeout -> ya 1Mb-alti sec, ya ilk 1Mb'i BLAST'la)
