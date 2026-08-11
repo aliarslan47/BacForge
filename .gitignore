@@ -12,3 +12,8 @@ dist/
 # Ortam
 .env
 test_data/
+
+# Sample reads (buyuk) — sadece manifest izlenir
+samples/**/*.fastq.gz
+fastp.html
+fastp.json

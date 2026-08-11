@@ -33,8 +33,9 @@ class PlasmidModule(Module):
         t = util.threads(self.ctx)
 
         mob_dir = self.sub_dir("02_work") / "mob_recon"
-        r.run("mob_recon", ["mob_recon", "--infile", str(genome), "--outdir", str(mob_dir), "--num_threads", str(t)],
-              conda_env=E["mobsuite"], version_cmd=["mob_recon", "--version"], check=False)
+        prov = r.run("mob_recon", ["mob_recon", "--infile", str(genome), "--outdir", str(mob_dir), "--num_threads", str(t)],
+                     conda_env=E["mobsuite"], version_cmd=["mob_recon", "--version"], check=False)
+        tool_ran = prov.get("exit_code") == 0
 
         mob_report = mob_dir / "contig_report.txt"
         plasmids = []
@@ -51,13 +52,18 @@ class PlasmidModule(Module):
                             "rep_type": parts[6] if len(parts) > 6 else ""
                         })
 
-        if not plasmids:
-            print("[M10] WARNING: mob_recon found no plasmids or output is missing.")
-
         with open(std_dir / "plasmids.tsv", "w", encoding="utf-8") as f:
             f.write("Plasmid_ID\tContig\tSize\tRep_Type\n")
             for p in plasmids:
                 f.write(f"{p['plasmid_id']}\t{p['contig']}\t{p['size']}\t{p['rep_type']}\n")
+        with open(std_dir / "plasmids.json", "w", encoding="utf-8") as f:
+            json.dump({"plasmids": plasmids}, f, indent=2, ensure_ascii=False)
 
-        self.write_summary(status="PASS" if plasmids else "WARNING", statistics={"plasmid_count": len(plasmids)}, details={"info": "Parsed mob_recon output"})
+        # Dürüst durum: araç çalıştıysa (plazmid 0 olsa da) PASS; çalışmadıysa WARNING.
+        if tool_ran:
+            self.write_summary(status="PASS", statistics={"plasmid_count": len(plasmids)},
+                               details={"tool": "MOB-suite (mob_recon)", "note": "PlasmidFinder: Milestone 2"})
+        else:
+            self.write_summary(status="WARNING", statistics={"plasmid_count": len(plasmids)},
+                               warnings=[f"mob_recon başarısız (exit {prov.get('exit_code')}). Log: {prov.get('log')}"])
         return

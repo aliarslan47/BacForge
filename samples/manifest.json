@@ -1,0 +1,27 @@
+{
+  "description": "BacForge demo sample-run seti. Organizma: Acinetobacter baumannii. ENA'dan indirildi.",
+  "species": "Acinetobacter baumannii",
+  "ncbi_taxid": 470,
+  "source": "ENA (ftp.sra.ebi.ac.uk)",
+  "reference_genome": "databases/references/acinetobacter/GCF_000015425_ATCC17978.fna (A. baumannii ATCC 17978, NCBI GCF_000015425.1)",
+  "samples": {
+    "short": {
+      "data_type": "SHORT_READ",
+      "platform": "ILLUMINA",
+      "instrument": "Illumina MiSeq",
+      "run_accession": "DRR035591",
+      "layout": "PAIRED",
+      "read_length_bp": 162,
+      "base_count": 501035562,
+      "approx_coverage": "~125x (genom ~4 Mb)",
+      "files": ["DRR035591_1.fastq.gz", "DRR035591_2.fastq.gz"],
+      "ena_url": "https://www.ebi.ac.uk/ena/browser/view/DRR035591"
+    },
+    "long": {
+      "status": "TODO — Acinetobacter ONT verisi henüz indirilmedi (short uçtan-uca doğrulandıktan sonra)"
+    },
+    "hybrid": {
+      "status": "TODO — Acinetobacter short+long aynı suş (short doğrulandıktan sonra)"
+    }
+  }
+}

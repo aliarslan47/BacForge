@@ -1,7 +1,7 @@
-"""M15 -- Comparative Genomics
-Tools: Panaroo / PPanGGOLiN
-Pangenome analysis: Core genome, soft-core, accessory, cloud genome, gene presence/absence matrix.
-Outputs: gene_presence_absence.tsv, core_genome.fasta, pangenome.tsv, distance_matrix.tsv, M15_summary.json
+"""M15 -- Comparative Genomics (Panaroo / PPanGGOLiN)
+Pangenom analizi çok-genomlu bir işlemdir (>=2 anotasyonlu genom).
+KOŞUL-BAZLI DÜRÜST: tek-örnekli turda -> NOT_APPLICABLE (spec kural #19). Sahte PASS YAZILMAZ.
+Batch modda (birden çok örnek) M06 GFF'leri toplanıp Panaroo GERÇEKTEN koşacak (Milestone 2).
 """
 from __future__ import annotations
 
@@ -22,45 +22,21 @@ class ComparativeGenomicsModule(Module):
         return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
 
     def outputs(self):
-        return [self.out_dir / "gene_presence_absence.tsv"]
+        return [self.out_dir / "M15_summary.json"]
 
     def run(self):
         self.check_inputs()
         std_dir = self.sub_dir("04_standardized")
 
-        r = self.ctx.runner
-        E = util.ENV
-        t = util.threads(self.ctx)
-
-        ref_json = self.ctx.run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
-        has_refs = False
-        if ref_json.exists():
-            try:
-                with open(ref_json, "r") as fh:
-                    strains = json.load(fh)
-                    if strains and isinstance(strains, list):
-                        has_refs = True
-            except Exception:
-                pass
-
-        pangenome = []
-        if has_refs:
-            pan_dir = self.sub_dir("02_work") / "panaroo"
-            pan_dir.mkdir(parents=True, exist_ok=True)
-            # r.run("panaroo", ["panaroo", ...], conda_env=E.get("comparative", "base"), check=False)
-            pass
-
-        with open(std_dir / "gene_presence_absence.tsv", "w", encoding="utf-8") as f:
-            f.write("Gene\tGenome\n")
-            if pangenome:
-                for p in pangenome:
-                    f.write(f"{p}\n")
-            else:
-                f.write("Bulunamadı\tBulunamadı\n")
-
-        self.write_summary(
-            status="PASS", 
-            statistics={"pangenome_genes": len(pangenome)}, 
-            details={"info": "Karşılaştırmalı analiz tamamlandı" if pangenome else "Referans Bulunamadı"}
-        )
-        return
+        # Bu çalıştırmadaki anotasyonlu genom sayısı (tek örnek = 1)
+        genome_count = 1
+        if genome_count < 2:
+            reason = ("Pangenom analizi >=2 anotasyonlu genom ister; bu tek-örnekli çalıştırmada "
+                      "1 genom var -> NOT_APPLICABLE (spec kural #19). Batch modda Panaroo gerçek koşacak.")
+            with open(std_dir / "gene_presence_absence.tsv", "w", encoding="utf-8") as f:
+                f.write("# NOT_APPLICABLE\t" + reason + "\n")
+                f.write("Gene\tGenome\tPresence\n")
+            self.write_summary(status="NOT_APPLICABLE",
+                               statistics={"genome_count": genome_count},
+                               details={"reason": reason})
+            return

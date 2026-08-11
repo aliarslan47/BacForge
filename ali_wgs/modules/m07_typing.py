@@ -47,26 +47,24 @@ class StrainTypingModule(Module):
         species = self.ctx.detection.get("ncbi_species", "Unknown")
         plugin_results = {}
 
-        if "klebsiella" in species.lower():
-            # Kleborate & Kaptive
+        species_l = (species or "").lower()
+        if "klebsiella" in species_l:
             kleb_file = std_dir / "kleborate_results.tsv"
-            res = r.run("kleborate", ["kleborate", "--st258_subtyping", "-a", str(genome), "-o", str(kleb_file)],
-                        conda_env=E.get("kleborate", "base"), version_cmd=["kleborate", "--version"], check=False)
-            if res and res.returncode == 0 and kleb_file.exists():
-                plugin_results["Kleborate"] = "COMPLETED"
+            prov = r.run("kleborate", ["kleborate", "--st258_subtyping", "-a", str(genome), "-o", str(kleb_file)],
+                         conda_env=E.get("kleborate", "base"), version_cmd=["kleborate", "--version"], check=False)
+            plugin_results["Kleborate"] = "COMPLETED" if prov.get("exit_code") == 0 and kleb_file.exists() else "FAIL"
+        elif "escherichia" in species_l or "coli" in species_l:
+            # ECTyper bu turda kurulu değil -> dürüstçe atla (Milestone 2). base'de aramaya çalışıp
+            # sahte FAIL üretme; env yoksa NOT_AVAILABLE işaretle.
+            if E.get("ectyper"):
+                ec_dir = std_dir / "ectyper"
+                prov = r.run("ectyper", ["ectyper", "-i", str(genome), "-o", str(ec_dir)],
+                             conda_env=E["ectyper"], version_cmd=["ectyper", "--version"], check=False)
+                plugin_results["ECTyper"] = "COMPLETED" if prov.get("exit_code") == 0 else "FAIL"
             else:
-                plugin_results["Kleborate"] = "FAIL"
-        elif "escherichia" in species.lower() or "coli" in species.lower():
-            # ECTyper for E. coli
-            ec_file = std_dir / "ectyper_results.tsv"
-            res = r.run("ectyper", ["ectyper", "-i", str(genome), "-o", str(ec_file.parent)],
-                        conda_env=E.get("ectyper", "base"), version_cmd=["ectyper", "--version"], check=False)
-            if res and res.returncode == 0:
-                plugin_results["ECTyper"] = "COMPLETED"
-            else:
-                plugin_results["ECTyper"] = "FAIL"
-        elif "salmonella" in species.lower():
-            plugin_results["SISTR"] = "NOT_IMPLEMENTED"
+                plugin_results["ECTyper"] = "NOT_AVAILABLE (Milestone 2)"
+        elif "salmonella" in species_l:
+            plugin_results["SISTR"] = "NOT_AVAILABLE (Milestone 2)"
         else:
             plugin_results["species_specific_module"] = "NOT_APPLICABLE"
 

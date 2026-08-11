@@ -1,6 +1,6 @@
-"""M13 -- Variant & Mutation Analysis
-Reference mapping and variant calling using Snippy / minimap2 / samtools / bcftools.
-Outputs: BAM, VCF, SNP table, INDEL table, M13_summary.json
+"""M13 -- Variant & Mutation Analysis (Snippy, contigs modu)
+Referans = M05 closest-1 (fasta_path). KURAL: 'Bulunamadı' satırı + otomatik PASS YOK.
+Referans yoksa NOT_APPLICABLE; snippy çalışıp varyant bulamazsa PASS (count=0); hata -> WARNING.
 """
 from __future__ import annotations
 
@@ -27,60 +27,56 @@ class VariantMutationModule(Module):
         self.check_inputs()
         genome = self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"
         std_dir = self.sub_dir("04_standardized")
-
         r = self.ctx.runner
         E = util.ENV
         t = util.threads(self.ctx)
 
-        # In a generic pipeline, variant calling needs a reference from M05
-        # and reads or contigs. We stay strictly inside our run folder.
         ref_json = self.ctx.run_dir / "M05_SPECIES_REFERENCE_IDENTIFICATION" / "closest_5_strains.json"
-        
         reference_fasta = None
         if ref_json.exists():
             try:
-                with open(ref_json, "r") as fh:
-                    strains = json.load(fh)
-                    if strains and isinstance(strains, list) and "fasta_path" in strains[0]:
-                        ref_candidate = Path(strains[0]["fasta_path"])
-                        if ref_candidate.exists():
-                            reference_fasta = ref_candidate
+                strains = json.load(open(ref_json))
+                if strains and isinstance(strains, list) and strains[0].get("fasta_path"):
+                    cand = Path(strains[0]["fasta_path"])
+                    if cand.exists():
+                        reference_fasta = cand
             except Exception:
                 pass
 
+        if reference_fasta is None:
+            with open(std_dir / "snps.tsv", "w", encoding="utf-8") as f:
+                f.write("Chromosome\tPosition\tRef\tAlt\n")
+            self.write_summary(status="NOT_APPLICABLE",
+                               details={"reason": "M05 closest-1 referansı yok -> varyant çağrısı yapılamadı."})
+            return
+
+        snippy_dir = self.sub_dir("02_work") / "snippy"
+        prov = r.run("snippy", ["snippy", "--cpus", str(t), "--outdir", str(snippy_dir), "--force",
+                                "--ref", str(reference_fasta), "--ctgs", str(genome)],
+                     conda_env=E.get("typing", "base"), version_cmd=["snippy", "--version"], check=False)
+        tool_ran = prov.get("exit_code") == 0
+
         snps = []
-        if reference_fasta:
-            snippy_dir = self.sub_dir("02_work") / "snippy"
-            # Run Snippy using contigs mode since we might only have assembly
-            r.run("snippy", ["snippy", "--cpus", str(t), "--outdir", str(snippy_dir), "--ref", str(reference_fasta), "--ctgs", str(genome)],
-                  conda_env=E.get("typing", "base"), version_cmd=["snippy", "--version"], check=False)
-            
-            vcf_file = snippy_dir / "snps.vcf"
-            if vcf_file.exists():
-                with open(vcf_file, "r", encoding="utf-8") as fh:
-                    for line in fh:
-                        if line.startswith("#"):
-                            continue
-                        parts = line.strip().split("\t")
-                        if len(parts) >= 5:
-                            snps.append({
-                                "chrom": parts[0],
-                                "pos": parts[1],
-                                "ref": parts[3],
-                                "alt": parts[4]
-                            })
+        vcf_file = snippy_dir / "snps.vcf"
+        if vcf_file.exists():
+            with open(vcf_file, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    if line.startswith("#"):
+                        continue
+                    parts = line.strip().split("\t")
+                    if len(parts) >= 5:
+                        snps.append({"chrom": parts[0], "pos": parts[1], "ref": parts[3], "alt": parts[4]})
 
         with open(std_dir / "snps.tsv", "w", encoding="utf-8") as f:
             f.write("Chromosome\tPosition\tRef\tAlt\n")
-            if snps:
-                for s in snps:
-                    f.write(f"{s['chrom']}\t{s['pos']}\t{s['ref']}\t{s['alt']}\n")
-            else:
-                f.write("Bulunamadı\tBulunamadı\t-\t-\n")
+            for s in snps:
+                f.write(f"{s['chrom']}\t{s['pos']}\t{s['ref']}\t{s['alt']}\n")
+        with open(std_dir / "variants.json", "w", encoding="utf-8") as f:
+            json.dump({"snps": snps, "reference": str(reference_fasta)}, f, indent=2, ensure_ascii=False)
 
-        self.write_summary(
-            status="PASS", 
-            statistics={"snp_count": len(snps)}, 
-            details={"info": "Varyant analizi tamamlandı" if snps else "Referans veya Varyant Bulunamadı"}
-        )
-        return
+        if tool_ran:
+            self.write_summary(status="PASS", statistics={"snp_count": len(snps)},
+                               details={"reference": reference_fasta.stem})
+        else:
+            self.write_summary(status="WARNING", statistics={"snp_count": len(snps)},
+                               warnings=[f"Snippy başarısız (exit {prov.get('exit_code')}). Log: {prov.get('log')}"])
