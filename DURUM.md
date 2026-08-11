@@ -39,5 +39,9 @@
 
 ## Notlar
 - Referans seti: `databases/references/acinetobacter/GCF_000015425_ATCC17978.fna` (M05 buradan FastANI).
-- Kullanılmayan faj DB'leri (checkv/pharokka/blast_viral/viral_proteins, ~8.9G) duruyor — silinsin mi kullanıcı kararı.
-- Eski çakışan MVP modülleri (m01_input, m03_qc, m0X_* faj seti) hâlâ `modules/` içinde kayıtsız/ölü — temizlenebilir.
+- **FAJ YOLU PLANLI (kullanıcı 2026-08-11): faj analizini DE yapacağız → SİLME.** Faj DB'leri
+  (checkv/pharokka/blast_viral/viral_proteins, ~8.9G) KALACAK. Eski faj modülleri (m09_blast=viral BLAST,
+  m10_annotation=Pharokka, m17_completeness=CheckV) ölü kod DEĞİL, faj branch'inin temeli — silinmeyecek,
+  BacForge'a **içerik-farkında yönlendirme** ile geri entegre edilecek: geNomad (M12) her contig'i
+  chromosome/plasmid/virus sınıflar → bakteri kolu (Bakta+CheckM2+MLST) | faj kolu (Pharokka+CheckV+viral BLAST).
+  Bu, orijinal spec'teki routing fikriyle + eski 33-faj projesinin makinesiyle örtüşür.
