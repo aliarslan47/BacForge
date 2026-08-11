@@ -5,6 +5,17 @@
 **Konum:** `/home/ali/BacForge/` · git: `git@github.com:aliarslan47/BacForge.git`
 **Son güncelleme:** 2026-08-11
 
+## 2026-08-11 — M05/M16 AKRABALIK DOĞRULUĞU + per-contig FASTA + BLAST tanısı
+Kullanıcı endişesi: "farklı contig'ler aynı türün farklı suşuna hit ediyor → akrabalık haritası yanlış çıkar mı?"
+Cevap+düzeltme: kimlik/akrabalık per-contig BLAST'la DEĞİL, genom-geneli ANI/mash ile → per-contig gürültüsünden bağımsız.
+GERÇEK KUSUR bulundu ve düzeltildi:
+- **closest_5 KİRLİYDİ:** bakta `_bakta/ref.fna` kopyaları sayılıyordu → aynı genom 2× (Rank1=2, 3=4), accession "ref".
+  M05: `_is_annotation_copy` + `_accession(GCF_/GCA_)` + `_parse_rank_fastani` (accession'a göre DEDUP) → **tekil** closest_5 + yeni **closest_10** (akrabalık haritası girdisi).
+- **M16 ağacı** aynı kirliliği alıyordu (havuz `rglob("*.fna")` bakta kopyalarını + "ref" yapraklarını ekliyordu) → dedup + anotasyon-kopya filtresi. Ağaç artık **13 TEKİL yaprak** (QUERY + 5 ANI-etiketli + 7 çeşitlilik), "ref"/tekrar yok.
+- **Per-contig FASTA:** her contig ayrı dosya, ANA dosya (genome.fasta) yanında `M04.../contigs/` (manuel web BLAST yükleme için) + `contig_lengths.tsv`; toplu genome.fasta'ya dokunulmadı. M05 remote-BLAST için 1Mb-guard'lı contig seçimi.
+- **BLAST tanısı:** 328kb/16S `blastn -remote` bu ortamda sürekli timeout/boş (NCBI throttle, kod değil) → kimlik zaten kraken2(%94.83)+FastANI(ANI%99.5)'e dayanıyor, bloklamıyor.
+- Koşu 20260811_165209_short: M05 closest temizlendi, M16→M17→M18 yeniden koşturuldu, rapor tekil accession'larla güncel (report.html 2.0MB). commit'ler: b14ed4f + bu tur.
+
 ## 2026-08-11 — PROJE ADI: ali-wgs-pipeline → BacForge (her yerde)
 Dizin `/home/ali/ali-wgs-pipeline` → `/home/ali/BacForge`; Python paketi `ali_wgs` → `bacforge`
 (42 dosya, import'lar + `python3 -m bacforge.cli`); env değişkenleri `ALI_WGS_*` → `BACFORGE_*`;

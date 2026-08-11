@@ -33,6 +33,7 @@ class SpeciesReferenceIdentificationModule(Module):
     BLAST_TIMEOUT = 3600              # DAIMA BLAST + sonucu bekle (16S fallback YOK). Uzun bekleme guvenlik siniri.
     MAX_REFS_FETCH = 60               # kesfedilen turden cekilecek tam genom ust siniri
     BLAST_MAX_CONTIG_BP = 1_000_000   # remote nt BLAST icin contig ust siniri (>1Mb remote'ta takilir/timeout)
+    CLOSEST_N = 10                    # akrabalik haritasi icin en yakin TEKIL genom sayisi (5-10)
 
     def inputs(self):
         return [self.ctx.run_dir / "M04_POLISHING_GENOME_QC" / "genome.fasta"]
@@ -207,7 +208,7 @@ class SpeciesReferenceIdentificationModule(Module):
         """datasets summary->accession->download ile kesfedilen turun tam genomlarini ceker (cap).
         Cache'de varsa yeniden cekmez. ('--limit' bu surumde yok; accession listesiyle sinirlanir.)"""
         cache.mkdir(parents=True, exist_ok=True)
-        existing = list(cache.rglob("*.fna"))
+        existing = [p for p in cache.rglob("*.fna") if not self._is_annotation_copy(p)]
         if existing:
             return sorted(existing)
         # 1) accession listesi (summary --as-json-lines)
@@ -243,11 +244,49 @@ class SpeciesReferenceIdentificationModule(Module):
                 zf.extractall(cache / "unz")
         except Exception:
             return []
-        return sorted((cache / "unz").rglob("*.fna")) + sorted((cache / "unz").rglob("*.fa"))
+        found = sorted((cache / "unz").rglob("*.fna")) + sorted((cache / "unz").rglob("*.fa"))
+        return [p for p in found if not self._is_annotation_copy(p)]
 
     @staticmethod
     def _slug(name: str) -> str:
         return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
+
+    @staticmethod
+    def _is_annotation_copy(p: Path) -> bool:
+        """Bakta/prokka anotasyon ciktisi olan kopya .fna (ornegin .../<acc>_bakta/ref.fna).
+        Bunlar closest listesinde ANA genomla AYNI olup TEKRAR yaprak yaratir -> dislanir."""
+        s = str(p)
+        return "_bakta/" in s or "_prokka/" in s or p.name == "ref.fna"
+
+    @staticmethod
+    def _accession(path: str) -> str:
+        """Yol icinden gercek assembly accession'ini (GCF_/GCA_) cikar; yoksa dosya adi."""
+        m = re.search(r"GC[FA]_\d+\.\d+", str(path))
+        return m.group(0) if m else Path(path).stem
+
+    def _parse_rank_fastani(self, ani_out: Path, organism: str, top_n: int) -> list[dict]:
+        """FastANI ciktisini oku -> anotasyon kopyalarini at -> accession'a gore DEDUP ->
+        ANI'ye gore sirala -> ilk top_n TEKIL genom. Ayni genomun tekrari YOK (dogru akrabalik agaci)."""
+        best: dict[str, tuple] = {}   # accession -> (ani, cov, fasta_path)
+        for line in ani_out.read_text(encoding="utf-8").splitlines():
+            p = line.split("\t")
+            if len(p) < 5:
+                continue
+            refpath = p[1]
+            if self._is_annotation_copy(Path(refpath)):
+                continue
+            try:
+                ani, m, tot = float(p[2]), int(p[3]), int(p[4])
+            except ValueError:
+                continue
+            acc = self._accession(refpath)
+            cov = round(100.0 * m / tot, 2) if tot else 0.0
+            if acc not in best or ani > best[acc][0]:
+                best[acc] = (ani, cov, refpath)
+        ranked = sorted(best.items(), key=lambda kv: kv[1][0], reverse=True)[:top_n]
+        return [{"rank": i, "organism": organism, "strain": acc, "assembly_accession": acc,
+                 "ani_percent": round(ani, 4), "query_coverage": cov, "fasta_path": rp}
+                for i, (acc, (ani, cov, rp)) in enumerate(ranked, 1)]
 
     # ---------- ana ----------
     def run(self):
@@ -302,21 +341,8 @@ class SpeciesReferenceIdentificationModule(Module):
                              conda_env=util.ENV.get("species", "base"),
                              version_cmd=["fastANI", "--version"], check=False)
                 if prov.get("exit_code") == 0 and ani_out.exists():
-                    rows = []
-                    for line in ani_out.read_text(encoding="utf-8").splitlines():
-                        p = line.split("\t")
-                        if len(p) >= 5:
-                            try:
-                                rows.append((p[1], float(p[2]), int(p[3]), int(p[4])))
-                            except ValueError:
-                                pass
-                    rows.sort(key=lambda x: x[1], reverse=True)
-                    for i, (rp, ani, m, tot) in enumerate(rows[:5], 1):
-                        acc = Path(rp).stem
-                        strains.append({"rank": i, "organism": organism, "strain": acc,
-                                        "assembly_accession": acc, "ani_percent": round(ani, 4),
-                                        "query_coverage": round(100.0 * m / tot, 2) if tot else 0.0,
-                                        "fasta_path": str(rp)})
+                    # DEDUP: accession'a gore tekil, anotasyon kopyalari haric -> ilk 10 tekil genom
+                    strains = self._parse_rank_fastani(ani_out, organism, self.CLOSEST_N)
                     if not strains:
                         closest_note = "FastANI eslesme vermedi."
                 else:
@@ -326,13 +352,17 @@ class SpeciesReferenceIdentificationModule(Module):
         else:
             closest_note = "Organizma kimligi belirlenemedi (BLAST+kraken bos)."
 
-        # yaz
-        std_dir.joinpath("closest_5_strains.json").write_text(
-            json.dumps(strains, indent=2, ensure_ascii=False), encoding="utf-8")
-        with open(std_dir / "closest_5_strains.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Rank\tOrganism\tAccession\tANI_percent\tQuery_coverage\n")
-            for s in strains:
-                fh.write(f"{s['rank']}\t{s['organism']}\t{s['assembly_accession']}\t{s['ani_percent']}\t{s['query_coverage']}\n")
+        # yaz: closest_5 (dashboard/rapor tablosu) + closest_10 (akrabalik haritasi) — hepsi TEKIL genom
+        def _write_closest(items, stem):
+            std_dir.joinpath(f"{stem}.json").write_text(
+                json.dumps(items, indent=2, ensure_ascii=False), encoding="utf-8")
+            with open(std_dir / f"{stem}.tsv", "w", encoding="utf-8") as fh:
+                fh.write("Rank\tOrganism\tAccession\tANI_percent\tQuery_coverage\n")
+                for s in items:
+                    fh.write(f"{s['rank']}\t{s['organism']}\t{s['assembly_accession']}"
+                             f"\t{s['ani_percent']}\t{s['query_coverage']}\n")
+        _write_closest(strains[:5], "closest_5_strains")
+        _write_closest(strains, "closest_10_strains")
         std_dir.joinpath("species_identification.json").write_text(json.dumps({
             "organism": organism, "identification_method": method,
             "blast_query_contig": blast_contig, "blast_query_bp": blast_bp,

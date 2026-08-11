@@ -7,10 +7,22 @@ Araclar ali-comparative env'inde: mash + Biopython.Phylo + matplotlib.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from .base import Module
 from .. import util
+
+
+def _is_annotation_copy(p) -> bool:
+    """Bakta/prokka anotasyon kopyasi .fna (ana genomla ayni) -> agacta TEKRAR yaprak olur, dislanir."""
+    s = str(p)
+    return "_bakta/" in s or "_prokka/" in s or Path(p).name == "ref.fna"
+
+
+def _accession(p) -> str:
+    m = re.search(r"GC[FA]_\d+\.\d+", str(p))
+    return m.group(0) if m else Path(p).stem
 
 TREE_HELPER = r'''
 import sys, json
@@ -99,22 +111,33 @@ class PhylogenomicsModule(Module):
             paths.append(fp); close_paths.add(fp)
             labels[fp] = f"{x['assembly_accession']}(ANI{x.get('ani_percent','?')})"
         # havuz kok dizini (closest_5'in fasta yolundan yukari) -> tum cekilen genomlar
+        # (bakta/prokka anotasyon kopyalari HARIC -> agacta 'ref' / tekrar yaprak olmaz)
         pool = []
         try:
             anchor = Path(refs[0]["fasta_path"])
             for up in anchor.parents:
                 if up.name == "unz" or (up / "ncbi_dataset").exists():
-                    pool = sorted(up.rglob("*.fna")); break
+                    pool = [p for p in sorted(up.rglob("*.fna")) if not _is_annotation_copy(p)]
+                    break
         except Exception:
             pool = []
-        extra = [str(p) for p in pool if str(p) not in close_paths]
-        # havuzdan esit araliklarla ~7 uzak sus sec (cesitlilik)
+        # accession'a gore DEDUP: closest'te olan veya zaten eklenen genomu tekrar ekleme
+        close_accs = {_accession(fp) for fp in close_paths}
+        seen_extra = set()
+        extra = []
+        for p in pool:
+            acc = _accession(p)
+            if str(p) in close_paths or acc in close_accs or acc in seen_extra:
+                continue
+            seen_extra.add(acc)
+            extra.append(str(p))
+        # havuzdan esit araliklarla ~7 uzak (TEKIL) sus sec (cesitlilik)
         take = 7
         if extra:
             step = max(1, len(extra) // take)
             for p in extra[::step][:take]:
                 paths.append(p)
-                labels[p] = Path(p).stem.split("_")[0] + "_" + Path(p).stem.split("_")[1] if "_" in Path(p).stem else Path(p).stem
+                labels[p] = _accession(p)
         (work / "labels.json").write_text(json.dumps(labels), encoding="utf-8")
 
         # mash sketch + triangle
