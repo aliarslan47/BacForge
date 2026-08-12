@@ -18,10 +18,27 @@
       "ena_url": "https://www.ebi.ac.uk/ena/browser/view/DRR035591"
     },
     "long": {
-      "status": "TODO — Acinetobacter ONT verisi henüz indirilmedi (short uçtan-uca doğrulandıktan sonra)"
+      "data_type": "LONG_READ",
+      "platform": "OXFORD_NANOPORE",
+      "instrument": "MinION",
+      "chemistry": "R9.4.1 (FLO-MIN106, 2020-05; oto-tespit)",
+      "run_accession": "ERR13764904",
+      "biosample": "SAMEA116048012",
+      "layout": "SINGLE",
+      "base_count": 679117073,
+      "approx_coverage": "~165x (genom ~4 Mb)",
+      "files": ["ERR13764904_ont.fastq.gz"],
+      "ena_url": "https://www.ebi.ac.uk/ena/browser/view/ERR13764904",
+      "status": "DOĞRULANDI 2026-08-12 — Flye --nano-raw + Medaka r941; N50 4.02Mb tek kromozom, CheckM2 %99.88, ST641, blaOXA-23"
     },
     "hybrid": {
-      "status": "TODO — Acinetobacter short+long aynı suş (short doğrulandıktan sonra)"
+      "data_type": "HYBRID",
+      "platform": "ILLUMINA + OXFORD_NANOPORE (aynı suş, SAMEA116048012)",
+      "illumina": {"run_accession": "ERR13661279", "instrument": "Illumina MiSeq", "layout": "PAIRED", "files": ["ERR13661279_R1.fastq.gz", "ERR13661279_R2.fastq.gz"]},
+      "nanopore": {"run_accession": "ERR13764904", "files": ["ERR13764904_ont.fastq.gz (long/ ile hardlink)"]},
+      "biosample": "SAMEA116048012",
+      "assembler": "Unicycler (Illumina+ONT)",
+      "status": "İndirildi + dizin hazır; koşu sırada (long doğrulandıktan sonra)"
     }
   }
 }

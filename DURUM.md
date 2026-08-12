@@ -3,7 +3,25 @@
 > "Nerede kaldık" anlık görüntüsü. Detay Claude belleğinde (`bacforge` memory).
 
 **Konum:** `/home/ali/BacForge/` · git: `git@github.com:aliarslan47/BacForge.git`
-**Son güncelleme:** 2026-08-11
+**Son güncelleme:** 2026-08-12
+
+## 2026-08-12 — LONG (ONT) YOLU UÇTAN UCA DOĞRULANDI + kimya-otomatik polishing
+Kullanıcı: "önce long, eksik tool varsa ekle, uçtan uca, eksik istemem." Long yolunda eksikler bulunup EKLENDİ:
+- **Kimya tanıma** (`detect.py:detect_ont_chemistry`): read başlığından R9/R10 → Flye modu + Medaka modeli.
+  Öncelik: config override (auto/none/default sentinel'leri override DEĞİL) → basecall_model_version_id →
+  flow_cell_id (FLO-* ürün / FA.. seri) → start_time yılı → varsayılan R10. Config'den override edilebilir
+  (`tools.ont.chemistry`, `tools.medaka.model`).
+- **M03 Medaka polishing** (YENİ): kimyaya göre model kaskadı (R9→r941_min_sup_g507; R10→--bacteria→r1041 SUP).
+  Cilasız Flye assembly CheckM2 %82 → **cilalı %99.88**. Flye artık M01'in filtrelenmiş okumasını kullanıyor.
+- **M01**: NanoPlot long-read QC eklendi; **filtlong** iki bug düzeltildi (`--min_length=` → ayrı arg; çıktı
+  gerçekten gzip'leniyor — `.gz` adlı düz-metin Flye'da "Not a gzipped file" veriyordu).
+- **M04**: `polishing_performed` artık M03'ten gerçek okunuyor (sabit `false` kaldırıldı).
+- **Örnek**: ENA `SAMEA116048012` (aynı suşun ONT+Illumina'sı). Long = `ERR13764904` (MinION R9.4.1, ~165x).
+- **Sonuç** (`runs/20260812_110249_long`): A. baumannii; assembly 4.10Mb/4 contig (contig_1=4.02Mb tek kromozom);
+  CheckM2 %99.88 comp / %5.05 cont; ANI %99.68 (GCF_001026965.1); **ST641** (Pasteur); AMR 17 gen (**blaOXA-23**,
+  blaOXA-51-like, blaADC, **armA**, aph/ant/aac, sul2, tet(B), mph(E)/msr(E), adeC); plazmid 0 replikon.
+  Durumlar dürüst: M02 WARNING (küçük kraken DB), M04 WARNING (cont %5.05 sınırda), M15 NOT_APPLICABLE.
+- SIRADA: **hybrid** (Unicycler, aynı suş ERR13661279 Illumina + ERR13764904 ONT; dizin hazır).
 
 ## 2026-08-11 — M05/M16 AKRABALIK DOĞRULUĞU + per-contig FASTA + BLAST tanısı
 Kullanıcı endişesi: "farklı contig'ler aynı türün farklı suşuna hit ediyor → akrabalık haritası yanlış çıkar mı?"

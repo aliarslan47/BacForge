@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .base import Module
 from .. import util
+from ..detect import detect_ont_chemistry
 
 
 class AssemblyModule(Module):
@@ -48,11 +49,16 @@ class AssemblyModule(Module):
             self.write_summary(status="PASS", details={"assembler": "None (Pre-assembled FASTA)"})
             return
 
-        # 2. LONG_READ (Flye)
+        # 2. LONG_READ (Flye --nano-hq + Medaka polishing)
         if data_type == "LONG_READ":
             flye_dir = self.sub_dir("02_work") / "flye"
+
+            # Tercih: M01'in QC-filtrelenmiş uzun okuması; yoksa ham ONT
+            filtered_long = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "filtered_long.fastq.gz"
             long_fq = None
-            if inp.is_dir():
+            if filtered_long.exists() and filtered_long.stat().st_size > 0:
+                long_fq = filtered_long
+            elif inp.is_dir():
                 for f in inp.glob("*"):
                     if any(k in f.name.lower() for k in ["long", "ont", "nanopore", "fastq", "fq"]):
                         long_fq = f
@@ -60,15 +66,57 @@ class AssemblyModule(Module):
             elif inp.is_file():
                 long_fq = inp
 
-            if not long_fq:
-                # Check M01 filtered output
-                long_fq = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "filtered_long.fastq.gz"
+            if not long_fq or not Path(long_fq).exists():
+                raise FileNotFoundError(
+                    "LONG_READ: uzun okuma bulunamadı (ne M01 filtered_long ne de ham ONT)."
+                )
 
-            r.run("flye", ["flye", "--nano-hq", str(long_fq), "-o", str(flye_dir), "-t", str(t)],
+            # ONT kimyasini ham/filtrelenmis okumadan tespit et -> Flye modu + Medaka modeli
+            chem = detect_ont_chemistry(long_fq, self.ctx.config)
+
+            r.run("flye", ["flye", chem["flye_mode"], str(long_fq), "-o", str(flye_dir), "-t", str(t)],
                   conda_env=E["flye"], version_cmd=["flye", "--version"])
+            flye_asm = flye_dir / "assembly.fasta"
 
-            shutil.copy(flye_dir / "assembly.fasta", draft_fasta)
-            self.write_summary(status="PASS", details={"assembler": "Flye"})
+            # Medaka polishing -- ONT indel duzeltme; kimyaya gore model deneme kaskadi
+            # (R9 -> r941 modeli; R10 -> once --bacteria, sonra acik SUP modeli).
+            medaka_dir = self.sub_dir("02_work") / "medaka"
+            warnings = []
+            polisher = None
+            polished_ok = False
+            for attempt in chem["medaka_attempts"]:
+                if medaka_dir.exists():
+                    shutil.rmtree(medaka_dir, ignore_errors=True)
+                mprov = r.run(
+                    "medaka",
+                    ["medaka_consensus", "-i", str(long_fq), "-d", str(flye_asm),
+                     "-o", str(medaka_dir), "-t", str(t)] + attempt,
+                    conda_env=E["medaka"], version_cmd=["medaka", "--version"], check=False,
+                )
+                cons = medaka_dir / "consensus.fasta"
+                if mprov.get("exit_code") == 0 and cons.exists() and cons.stat().st_size > 0:
+                    shutil.copy(cons, draft_fasta)
+                    polisher = f"Medaka ({' '.join(attempt)})"
+                    polished_ok = True
+                    break
+                warnings.append(
+                    f"Medaka denemesi basarisiz ({' '.join(attempt)}, exit {mprov.get('exit_code')})."
+                )
+
+            if not polished_ok:
+                # Dürüstlük: polishing başarısızsa gizleme, cilalanmamış Flye ile devam et + WARNING
+                shutil.copy(flye_asm, draft_fasta)
+                warnings.append("Tum Medaka denemeleri basarisiz; cilalanmamis Flye assembly kullanildi.")
+
+            self.write_summary(
+                status="PASS" if polished_ok else "WARNING",
+                details={"assembler": f"Flye ({chem['flye_mode']})", "polisher": polisher,
+                         "polishing_performed": polished_ok,
+                         "ont_chemistry": chem["chemistry"],
+                         "chemistry_basis": chem["basis"],
+                         "chemistry_confidence": chem["confidence"]},
+                warnings=warnings,
+            )
             return
 
         # 3. SHORT_READ (SPAdes / SKESA)

@@ -6,7 +6,9 @@ Assembly input -> SKIPPED
 """
 from __future__ import annotations
 
+import gzip
 import json
+import shutil
 from pathlib import Path
 
 from .base import Module
@@ -90,11 +92,23 @@ class ReadQCModule(Module):
             filtered_long = self.sub_dir("04_standardized") / "filtered_long.fastq.gz"
 
             if long_fq and long_fq.exists():
+                # NanoPlot: ham uzun-okuma QC görseli/istatistiği (uzunluk/kalite dağılımı)
+                viz = self.sub_dir("06_visualization")
+                r.run("nanoplot", ["NanoPlot", "--fastq", str(long_fq), "-o", str(viz),
+                                   "-t", str(t), "-p", "nanoplot_"],
+                      conda_env=E["ont_qc"], version_cmd=["NanoPlot", "--version"], check=False)
+
                 cfg_filt = self.ctx.config.get("tools", {}).get("filtlong", {})
                 min_len = cfg_filt.get("min_length", 1000)
                 keep_pct = cfg_filt.get("keep_percent", 95)
-                cmd = ["filtlong", f"--min_length={min_len}", f"--keep_percent={keep_pct}", str(long_fq)]
-                r.run("filtlong", cmd, conda_env=E["ont_qc"], version_cmd=["filtlong", "--version"], stdout_path=str(filtered_long))
+                # filtlong DÜZ-METİN FASTQ verir (stdout); önce .fastq'a yaz, sonra gerçekten gzip'le
+                # (aksi halde .gz adlı sıkıştırılmamış dosya Flye/Unicycler'da "Not a gzipped file" hatası verir).
+                filtered_plain = self.sub_dir("04_standardized") / "filtered_long.fastq"
+                cmd = ["filtlong", "--min_length", str(min_len), "--keep_percent", str(keep_pct), str(long_fq)]
+                r.run("filtlong", cmd, conda_env=E["ont_qc"], version_cmd=["filtlong", "--version"], stdout_path=str(filtered_plain))
+                with open(filtered_plain, "rb") as _fi, gzip.open(filtered_long, "wb") as _fo:
+                    shutil.copyfileobj(_fi, _fo)
+                filtered_plain.unlink(missing_ok=True)
                 stats["long_read_qc"] = "COMPLETED"
 
         # Write summary TSV

@@ -36,7 +36,19 @@ class PolishingGenomeQCModule(Module):
         std_dir = self.sub_dir("04_standardized")
         final_genome = std_dir / "genome.fasta"
 
-        # Polishing bu turda yok: draft'ı kanonik genome.fasta olarak kopyala (dürüstçe raporlanır).
+        # Polishing durumu M03'ten okunur (dürüst raporlama; LONG_READ'de Medaka çalışır).
+        m03_summary = self.ctx.run_dir / "M03_GENOME_ASSEMBLY" / "M03_summary.json"
+        polishing_performed = False
+        polisher = None
+        if m03_summary.exists():
+            try:
+                m03d = json.loads(m03_summary.read_text()).get("details", {})
+                polishing_performed = bool(m03d.get("polishing_performed", False))
+                polisher = m03d.get("polisher")
+            except Exception:
+                pass
+
+        # Cilalama M03'te yapıldı; M04 draft'ı (LONG'da polished, diğerinde assembler çıktısı) kopyalar.
         shutil.copy(draft, final_genome)
 
         # 1. QUAST
@@ -124,8 +136,12 @@ class PolishingGenomeQCModule(Module):
             "completeness_percent": completeness,
             "contamination_percent": contamination,
             "quality_status": quality_status,
-            "polishing_performed": False,
-            "polishing_note": "Bu turda polishing yok (Milestone 2: Medaka/Racon/Polypolish).",
+            "polishing_performed": polishing_performed,
+            "polisher": polisher,
+            "polishing_note": (
+                f"Polisher: {polisher}" if polishing_performed
+                else "Polishing uygulanmadi (short/hybrid assembler dahili cilalar; ya da uzun-okuma polishing basarisiz)."
+            ),
         }
         with open(std_dir / "genome_stats.json", "w", encoding="utf-8") as fh:
             json.dump(genome_stats, fh, indent=2, ensure_ascii=False)
