@@ -125,6 +125,36 @@ def filtered_contigs(ctx) -> Path:
     return Path(ctx.run_dir) / "07_Contig_Filtering" / "contigs.filtered.fasta"
 
 
+def find_long_reads(inp):
+    """ONT uzun-okuma dosyasini sec.
+
+    Kritik: HYBRID dizininde hem Illumina (R1/R2) hem ONT bulunur. Genel 'fastq'/'fq'
+    anahtari Illumina dosyalarina da uyar -> yanlis secim (bkz filtlong bos cikti bug'i).
+    Bu yuzden ONCE ONT-ozel isaretlere bakilir ve kisa-okuma (R1/R2/_1./_2.) DISLANIR.
+    """
+    p = Path(inp)
+    if p.is_file():
+        return p
+    if not p.is_dir():
+        return None
+    cand = sorted(set(list(p.glob("*.fastq*")) + list(p.glob("*.fq*"))))
+
+    def _is_short(name: str) -> bool:
+        n = name.lower()
+        return ("_r1" in n or "_r2" in n or "_1." in n or "_2." in n)
+
+    def _is_ont(name: str) -> bool:
+        n = name.lower()
+        return any(k in n for k in ("ont", "nanopore", "long", "minion", "promethion", "gridion"))
+
+    onts = [f for f in cand if _is_ont(f.name) and not _is_short(f.name)]
+    if onts:
+        return onts[0]
+    # ONT isareti yoksa: kisa-okuma OLMAYAN tek fastq (tek dosyali long dizini)
+    non_short = [f for f in cand if not _is_short(f.name)]
+    return non_short[0] if non_short else None
+
+
 def fopen(path):
     return gzip.open(path, "rt") if str(path).endswith(".gz") else open(path, "rt")
 

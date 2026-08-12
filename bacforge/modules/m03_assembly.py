@@ -55,16 +55,10 @@ class AssemblyModule(Module):
 
             # Tercih: M01'in QC-filtrelenmiş uzun okuması; yoksa ham ONT
             filtered_long = self.ctx.run_dir / "M01_READ_QC_PREPROCESSING" / "filtered_long.fastq.gz"
-            long_fq = None
             if filtered_long.exists() and filtered_long.stat().st_size > 0:
                 long_fq = filtered_long
-            elif inp.is_dir():
-                for f in inp.glob("*"):
-                    if any(k in f.name.lower() for k in ["long", "ont", "nanopore", "fastq", "fq"]):
-                        long_fq = f
-                        break
-            elif inp.is_file():
-                long_fq = inp
+            else:
+                long_fq = util.find_long_reads(inp)
 
             if not long_fq or not Path(long_fq).exists():
                 raise FileNotFoundError(

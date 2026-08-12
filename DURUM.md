@@ -21,7 +21,14 @@ Kullanıcı: "önce long, eksik tool varsa ekle, uçtan uca, eksik istemem." Lon
   CheckM2 %99.88 comp / %5.05 cont; ANI %99.68 (GCF_001026965.1); **ST641** (Pasteur); AMR 17 gen (**blaOXA-23**,
   blaOXA-51-like, blaADC, **armA**, aph/ant/aac, sul2, tet(B), mph(E)/msr(E), adeC); plazmid 0 replikon.
   Durumlar dürüst: M02 WARNING (küçük kraken DB), M04 WARNING (cont %5.05 sınırda), M15 NOT_APPLICABLE.
-- SIRADA: **hybrid** (Unicycler, aynı suş ERR13661279 Illumina + ERR13764904 ONT; dizin hazır).
+- **HYBRID de DOĞRULANDI** (`runs/20260812_125833_hybrid`, 19 modül exit 0, M15 hariç hepsi PASS): Unicycler
+  (aynı suş SAMEA116048012 = ERR13661279 Illumina + ERR13764904 ONT). 8 contig (contig_1=4.02Mb kromozom),
+  CheckM2 **%100 / %0.08** (short-read cilası → long'un %99.88/%5.05'inden daha temiz), ANI %99.71, **ST641**,
+  AMR 16 gen (blaOXA-23, blaOXA-66, blaADC-30, armA...). Long ile birebir tutarlı (tür/ST/ref/MDR).
+  **HYBRID bug'ı bulundu+çözüldü:** M01 uzun-okuma seçimi `"fastq"` anahtarıyla Illumina R1'i seçiyordu
+  (R1 de .fastq) → filtlong boş → Unicycler patlak. `util.find_long_reads` (ONT-özel işaret + R1/R2 dışlama)
+  + M01 boş-long guard'ı (sessiz PASS yerine RuntimeError) eklendi.
+- **MILESTONE 1 PLATFORM KAPSAMI TAMAM: short ✅ + long ✅ + hybrid ✅.** SIRADA: Milestone 2 çok-araçlı zenginleştirme.
 
 ## 2026-08-11 — M05/M16 AKRABALIK DOĞRULUĞU + per-contig FASTA + BLAST tanısı
 Kullanıcı endişesi: "farklı contig'ler aynı türün farklı suşuna hit ediyor → akrabalık haritası yanlış çıkar mı?"

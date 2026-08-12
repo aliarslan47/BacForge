@@ -80,14 +80,8 @@ class ReadQCModule(Module):
 
         # 2. LONG READ / HYBRID Branch
         if data_type in ("LONG_READ", "HYBRID"):
-            long_fq = None
-            if inp.is_dir():
-                for f in inp.glob("*"):
-                    if any(k in f.name.lower() for k in ["long", "ont", "nanopore", "fastq", "fq"]):
-                        long_fq = f
-                        break
-            elif inp.is_file():
-                long_fq = inp
+            # ONT dosyasini sec (HYBRID'de Illumina R1/R2 DISLANIR; bkz util.find_long_reads)
+            long_fq = util.find_long_reads(inp)
 
             filtered_long = self.sub_dir("04_standardized") / "filtered_long.fastq.gz"
 
@@ -109,7 +103,23 @@ class ReadQCModule(Module):
                 with open(filtered_plain, "rb") as _fi, gzip.open(filtered_long, "wb") as _fo:
                     shutil.copyfileobj(_fi, _fo)
                 filtered_plain.unlink(missing_ok=True)
+
+                # Gürültülü hata: filtlong sonrası uzun-okuma BOŞSA sessizce PASS verme
+                # (yanlış dosya seçimi/aşırı filtre -> downstream Flye/Unicycler'i patlatır).
+                kept = 0
+                with util.fopen(filtered_long) as _fh:
+                    for _i, _ln in enumerate(_fh):
+                        if _i % 4 == 0:
+                            kept += 1
+                        if _i > 40:
+                            break
+                if kept == 0:
+                    raise RuntimeError(
+                        f"[M01] filtlong sonrası uzun-okuma BOŞ (secilen dosya: {long_fq}). "
+                        f"Yanlis dosya secimi ya da min_length cok yuksek olabilir."
+                    )
                 stats["long_read_qc"] = "COMPLETED"
+                stats["long_reads_kept_probe"] = kept
 
         # Write summary TSV
         with open(std_dir / "qc_statistics.tsv", "w", encoding="utf-8") as fh:

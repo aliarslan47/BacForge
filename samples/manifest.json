@@ -38,7 +38,7 @@
       "nanopore": {"run_accession": "ERR13764904", "files": ["ERR13764904_ont.fastq.gz (long/ ile hardlink)"]},
       "biosample": "SAMEA116048012",
       "assembler": "Unicycler (Illumina+ONT)",
-      "status": "İndirildi + dizin hazır; koşu sırada (long doğrulandıktan sonra)"
+      "status": "DOĞRULANDI 2026-08-12 — Unicycler; 8 contig (contig_1=4.02Mb kromozom), CheckM2 %100/%0.08, ST641, ANI %99.71, blaOXA-23/blaOXA-66; long ile tutarlı"
     }
   }
 }
