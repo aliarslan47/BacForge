@@ -335,10 +335,10 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
                                   ["Lokus", "Alel no"], mlst_rows, avail=av.get("mlst"))
 
         amr = dash.get("amr_genes", []) or []
-        t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus)",
-                      ["Gen", "Ilac sinifi", "Alt sinif", "Identity %", "Contig"],
+        t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus + RGI/CARD + ResFinder)",
+                      ["Gen", "Ilac sinifi", "Alt sinif", "Identity %", "Contig", "Kaynak"],
                       [[a.get("gene_symbol"), a.get("drug_class"), a.get("subclass"),
-                        a.get("identity"), a.get("contig")] for a in amr],
+                        a.get("identity"), a.get("contig"), a.get("source")] for a in amr],
                       avail=av.get("amr_genes"))
 
         vir = dash.get("virulence_genes", []) or []

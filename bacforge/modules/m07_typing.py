@@ -68,6 +68,36 @@ class StrainTypingModule(Module):
         else:
             plugin_results["species_specific_module"] = "NOT_APPLICABLE"
 
+        # Kaptive (K/O locus) — Klebsiella (kpsc) ve Acinetobacter baumannii (ab)
+        if "klebsiella" in species_l:
+            kap_dbs = [("kpsc_k", "K"), ("kpsc_o", "O")]
+        elif "acinetobacter" in species_l and "baumannii" in species_l:
+            kap_dbs = [("ab_k", "K"), ("ab_o", "OC")]
+        else:
+            kap_dbs = []
+        kaptive_out = {}
+        for dbkw, label in kap_dbs:
+            kap_tsv = std_dir / f"kaptive_{dbkw}.tsv"
+            prov = r.run(f"kaptive_{dbkw}", ["kaptive", "assembly", dbkw, str(genome), "-o", str(kap_tsv)],
+                         conda_env=E.get("kaptive", "base"), version_cmd=["kaptive", "--version"], check=False)
+            best = None
+            if kap_tsv.exists() and kap_tsv.stat().st_size > 0:
+                lines = kap_tsv.read_text(encoding="utf-8", errors="replace").splitlines()
+                if len(lines) >= 2:
+                    hdr = lines[0].split("\t"); ix = {h.strip(): i for i, h in enumerate(hdr)}
+                    p = lines[1].split("\t")
+                    gv = lambda c: (p[ix[c]] if c in ix and ix[c] < len(p) else "")
+                    best = {"locus": gv("Best match locus"), "type": gv("Best match type"),
+                            "confidence": gv("Match confidence")}
+            if best:
+                kaptive_out[label] = best
+                plugin_results[f"Kaptive_{label}"] = f"{best['type'] or best['locus']} ({best['confidence']})"
+            else:
+                plugin_results[f"Kaptive_{label}"] = f"FAIL (exit {prov.get('exit_code')})"
+        if kap_dbs:
+            with open(std_dir / "kaptive.json", "w", encoding="utf-8") as fh:
+                json.dump(kaptive_out, fh, indent=2, ensure_ascii=False)
+
         with open(std_dir / "species_plugins.json", "w", encoding="utf-8") as fh:
             json.dump(plugin_results, fh, indent=2)
 

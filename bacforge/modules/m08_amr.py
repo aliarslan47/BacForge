@@ -39,7 +39,7 @@ class AMRModule(Module):
         if amr_db.exists():
             cmd.extend(["--database", str(amr_db)])
 
-        r.run("amrfinder", cmd, conda_env=E["amrfinder"], version_cmd=["amrfinder", "--version"], stdout_path=str(amr_out), check=False)
+        prov_amr = r.run("amrfinder", cmd, conda_env=E["amrfinder"], version_cmd=["amrfinder", "--version"], stdout_path=str(amr_out), check=False)
 
         # Parse AMRFinder or construct standardized outputs
         amr_genes = []
@@ -70,26 +70,79 @@ class AMRModule(Module):
                                 "strand": parts[4] if len(parts) > 4 else "+"
                             })
 
+        for g in amr_genes:
+            g.setdefault("source", "AMRFinderPlus")
         if not amr_genes:
-            print("[M08] WARNING: AMRFinderPlus output not found or empty.")
+            print("[M08] WARNING: AMRFinderPlus çıktısı yok/boş.")
 
-        # Write standardized amr_genes.tsv
+        def _mk(gene, drug, sub, ident, cov, contig, source):
+            return {"gene_symbol": gene or "", "element_type": "AMR", "drug_class": drug or "",
+                    "subclass": sub or "", "coverage": cov or "", "identity": ident or "",
+                    "contig": contig or "", "start": "", "end": "", "strand": "", "source": source}
+
+        def _tsv_cols(path):
+            if not (path.exists() and path.stat().st_size > 0):
+                return None, []
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            if not lines:
+                return None, []
+            hdr = lines[0].lstrip("#").split("\t")
+            idx = {h.strip(): i for i, h in enumerate(hdr)}
+            return idx, [ln.split("\t") for ln in lines[1:] if ln.strip()]
+
+        # 2. RGI (CARD)
+        rgi_genes = []
+        rgi_prefix = self.sub_dir("03_native_outputs") / "rgi"
+        prov_rgi = r.run("rgi", ["rgi", "main", "-i", str(genome), "-o", str(rgi_prefix),
+                                 "-t", "contig", "-n", str(t), "--clean"],
+                         conda_env=E.get("rgi", "base"), version_cmd=["rgi", "main", "--version"], check=False)
+        idx, rows = _tsv_cols(Path(str(rgi_prefix) + ".txt"))
+        if idx:
+            gv = lambda p, c: (p[idx[c]] if c in idx and idx[c] < len(p) else "")
+            for p in rows:
+                rgi_genes.append(_mk(gv(p, "Best_Hit_ARO"), gv(p, "Drug Class"), gv(p, "Resistance Mechanism"),
+                                     gv(p, "Best_Identities"), "", gv(p, "Contig"), "RGI/CARD"))
+
+        # 3. ResFinder (abricate --db resfinder)
+        resf_genes = []
+        resf_out = self.sub_dir("03_native_outputs") / "abricate_resfinder.tsv"
+        prov_rf = r.run("abricate_resfinder", ["abricate", "--db", "resfinder", "--nopath", str(genome)],
+                        conda_env=E.get("virulence", "base"), version_cmd=["abricate", "--version"],
+                        stdout_path=str(resf_out), check=False)
+        idx, rows = _tsv_cols(resf_out)
+        if idx:
+            gv = lambda p, c: (p[idx[c]] if c in idx and idx[c] < len(p) else "")
+            for p in rows:
+                resf_genes.append(_mk(gv(p, "GENE"), gv(p, "RESISTANCE") or gv(p, "PRODUCT"), gv(p, "PRODUCT"),
+                                      gv(p, "%IDENTITY"), gv(p, "%COVERAGE"), gv(p, "SEQUENCE"), "ResFinder"))
+
+        # Birleşik, kaynak-etiketli liste (M17/M18 bunu kullanır)
+        amr_all = amr_genes + rgi_genes + resf_genes
+        sources = {"AMRFinderPlus": len(amr_genes), "RGI/CARD": len(rgi_genes), "ResFinder": len(resf_genes)}
+        ran = {"AMRFinderPlus": prov_amr.get("exit_code") == 0,
+               "RGI/CARD": prov_rgi.get("exit_code") == 0,
+               "ResFinder": prov_rf.get("exit_code") == 0}
+
         with open(std_dir / "amr_genes.tsv", "w", encoding="utf-8") as fh:
-            fh.write("Gene_Symbol\tElement_Type\tDrug_Class\tSubclass\tCoverage\tIdentity\tContig\tStart\tEnd\tStrand\n")
-            for g in amr_genes:
-                fh.write(f"{g['gene_symbol']}\t{g['element_type']}\t{g['drug_class']}\t{g['subclass']}\t{g['coverage']}\t{g['identity']}\t{g['contig']}\t{g['start']}\t{g['end']}\t{g['strand']}\n")
-
+            fh.write("Gene_Symbol\tDrug_Class\tSubclass\tCoverage\tIdentity\tContig\tSource\n")
+            for g in amr_all:
+                fh.write(f"{g['gene_symbol']}\t{g['drug_class']}\t{g['subclass']}\t{g['coverage']}\t{g['identity']}\t{g['contig']}\t{g['source']}\n")
         with open(std_dir / "amr_mutations.tsv", "w", encoding="utf-8") as fh:
             fh.write("Gene_Symbol\tMutation\tResistance_Mechanism\tDrug_Class\n")
-
         with open(std_dir / "amr_proteins.tsv", "w", encoding="utf-8") as fh:
             fh.write("Protein_ID\tGene_Symbol\tProduct\n")
-
         with open(std_dir / "amr.json", "w", encoding="utf-8") as fh:
-            json.dump({"amr_genes": amr_genes, "amr_mutations": amr_mutations}, fh, indent=2)
+            json.dump({"amr_genes": amr_all, "amr_mutations": amr_mutations,
+                       "by_source": {"amrfinderplus": amr_genes, "rgi_card": rgi_genes, "resfinder": resf_genes},
+                       "source_counts": sources}, fh, indent=2, ensure_ascii=False)
 
+        # Dürüst durum: en az bir araç çalıştıysa PASS; hiçbiri değilse WARNING.
+        any_ran = any(ran.values())
+        warns = [f"{k} çalışmadı" for k, ok in ran.items() if not ok]
         self.write_summary(
-            status="PASS",
-            statistics={"amr_gene_count": len(amr_genes), "mutation_count": len(amr_mutations)},
-            details={"drug_classes": list(set(g["drug_class"] for g in amr_genes))}
+            status="PASS" if any_ran else "WARNING",
+            statistics={"amr_gene_count": len(amr_all), "source_counts": sources},
+            warnings=warns or None,
+            details={"tools": [k for k, ok in ran.items() if ok],
+                     "drug_classes": sorted({g["drug_class"] for g in amr_all if g["drug_class"]})}
         )

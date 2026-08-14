@@ -38,7 +38,9 @@ ENV = {
     "phylogeny": "ali-phylogeny",
     "comparative": "ali-comparative",
     "defense": "ali-defense",
-    "mge": "ali-mge",
+    "mge": "ali-mge",             # isescan + integron_finder
+    "rgi": "ali-rgi",             # CARD/RGI (M08)
+    "kaptive": "ali-kaptive",     # K/O locus tiplendirme (M07)
 }
 
 

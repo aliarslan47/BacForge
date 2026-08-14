@@ -52,18 +52,46 @@ class PlasmidModule(Module):
                             "rep_type": parts[6] if len(parts) > 6 else ""
                         })
 
-        with open(std_dir / "plasmids.tsv", "w", encoding="utf-8") as f:
-            f.write("Plasmid_ID\tContig\tSize\tRep_Type\n")
-            for p in plasmids:
-                f.write(f"{p['plasmid_id']}\t{p['contig']}\t{p['size']}\t{p['rep_type']}\n")
-        with open(std_dir / "plasmids.json", "w", encoding="utf-8") as f:
-            json.dump({"plasmids": plasmids}, f, indent=2, ensure_ascii=False)
+        for p in plasmids:
+            p.setdefault("source", "MOB-suite")
 
-        # Dürüst durum: araç çalıştıysa (plazmid 0 olsa da) PASS; çalışmadıysa WARNING.
-        if tool_ran:
-            self.write_summary(status="PASS", statistics={"plasmid_count": len(plasmids)},
-                               details={"tool": "MOB-suite (mob_recon)", "note": "PlasmidFinder: Milestone 2"})
+        # PlasmidFinder (abricate --db plasmidfinder) — replikon tespiti (M04 genome üstünde)
+        pf_out = self.sub_dir("02_work") / "abricate_plasmidfinder.tsv"
+        prov_pf = r.run("abricate_plasmidfinder", ["abricate", "--db", "plasmidfinder", "--nopath", str(genome)],
+                        conda_env=E.get("virulence", "base"), version_cmd=["abricate", "--version"],
+                        stdout_path=str(pf_out), check=False)
+        replicons = []
+        if pf_out.exists() and pf_out.stat().st_size > 0:
+            lines = pf_out.read_text(encoding="utf-8", errors="replace").splitlines()
+            if lines:
+                hdr = lines[0].lstrip("#").split("\t"); ix = {h.strip(): i for i, h in enumerate(hdr)}
+                gv = lambda p, c: (p[ix[c]] if c in ix and ix[c] < len(p) else "")
+                for ln in lines[1:]:
+                    if not ln.strip():
+                        continue
+                    p = ln.split("\t")
+                    replicons.append({"plasmid_id": gv(p, "GENE"), "contig": gv(p, "SEQUENCE"),
+                                      "size": "", "rep_type": gv(p, "GENE"),
+                                      "identity": gv(p, "%IDENTITY"), "source": "PlasmidFinder"})
+        pf_ran = prov_pf.get("exit_code") == 0
+        plasmids_all = plasmids + replicons
+
+        with open(std_dir / "plasmids.tsv", "w", encoding="utf-8") as f:
+            f.write("Plasmid_ID\tContig\tSize\tRep_Type\tSource\n")
+            for p in plasmids_all:
+                f.write(f"{p['plasmid_id']}\t{p['contig']}\t{p['size']}\t{p['rep_type']}\t{p.get('source','')}\n")
+        with open(std_dir / "plasmids.json", "w", encoding="utf-8") as f:
+            json.dump({"plasmids": plasmids_all, "replicons": replicons,
+                       "source_counts": {"MOB-suite": len(plasmids), "PlasmidFinder": len(replicons)}},
+                      f, indent=2, ensure_ascii=False)
+
+        # Dürüst durum: en az bir araç çalıştıysa (0 bulsa da) PASS; hiçbiri değilse WARNING.
+        if tool_ran or pf_ran:
+            ran = [t for t, ok in (("MOB-suite", tool_ran), ("PlasmidFinder", pf_ran)) if ok]
+            self.write_summary(status="PASS",
+                               statistics={"plasmid_count": len(plasmids), "replicon_count": len(replicons)},
+                               details={"tools": ran})
         else:
-            self.write_summary(status="WARNING", statistics={"plasmid_count": len(plasmids)},
-                               warnings=[f"mob_recon başarısız (exit {prov.get('exit_code')}). Log: {prov.get('log')}"])
+            self.write_summary(status="WARNING", statistics={"plasmid_count": 0},
+                               warnings=[f"mob_recon exit {prov.get('exit_code')}, PlasmidFinder exit {prov_pf.get('exit_code')}"])
         return
