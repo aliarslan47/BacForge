@@ -333,6 +333,19 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
                      f'<b>{e(mlst_st)}</b></p>' if mlst_scheme else '<p class="na">MLST sonucu yok.</p>')
         t_m07 = mlst_head + table("M07 — MLST alel profili (locus / allele numarası)",
                                   ["Lokus", "Alel no"], mlst_rows, avail=av.get("mlst"))
+        # Kaptive kapsül/O-antijen tiplemesi (varsa) — M07 bölümüne eklenir
+        kap = {}
+        kap_f = run_dir / "M07_STRAIN_TYPING" / "kaptive.json"
+        if kap_f.exists():
+            try:
+                kap = json.load(open(kap_f, encoding="utf-8")) or {}
+            except Exception:
+                kap = {}
+        if kap:
+            kap_rows = [[lbl, v.get("locus"), v.get("type"), v.get("confidence")]
+                        for lbl, v in kap.items() if isinstance(v, dict)]
+            t_m07 = t_m07 + table("M07 — Kapsül/O-antijen tiplemesi (Kaptive)",
+                                  ["Lokus tipi", "Locus", "Tip", "Güven"], kap_rows)
 
         amr = dash.get("amr_genes", []) or []
         t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus + RGI/CARD + ResFinder)",
