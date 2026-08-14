@@ -41,6 +41,7 @@ ENV = {
     "mge": "ali-mge",             # isescan + integron_finder
     "rgi": "ali-rgi",             # CARD/RGI (M08)
     "kaptive": "ali-kaptive",     # K/O locus tiplendirme (M07)
+    "chewbbaca": "ali-chewbbaca", # cgMLST (M07)
 }
 
 
