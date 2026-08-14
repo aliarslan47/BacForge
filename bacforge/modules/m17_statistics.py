@@ -19,6 +19,33 @@ def _load_json(p: Path, default=None):
     return default
 
 
+# Boş çıktının "0 sonuç" mu yoksa "modül yapılamadı" mı olduğunu ayırt etmek için
+# modül durumuna göre bir neden metni üret. Sessizce boş saymak yasak (dürüstlük ilkesi).
+_STATUS_MSG = {
+    "FAIL": "modül hata verdi",
+    "SKIPPED": "config ile kapalı (atlandı)",
+    "NOT_APPLICABLE": "bu koşuda uygulanabilir değil",
+}
+
+
+def _availability(summ) -> dict:
+    """Bir modül özetinden veri-uygunluğu ve (yoksa) nedenini çıkarır."""
+    if not summ:
+        return {"available": False, "status": None, "reason": "modül çalışmadı (özet üretmedi)"}
+    status = summ.get("status")
+    if status in ("PASS", "WARNING"):
+        return {"available": True, "status": status}
+    det = summ.get("details") or {}
+    errs = summ.get("errors") or []
+    if det.get("reason"):
+        reason = str(det["reason"])
+    elif errs:
+        reason = "; ".join(str(x) for x in errs)
+    else:
+        reason = _STATUS_MSG.get(status, "çıktı üretilmedi")
+    return {"available": False, "status": status, "reason": reason}
+
+
 class StatisticsVisualizationModule(Module):
     number = "17"
     name = "statistics_visualization"
@@ -67,6 +94,20 @@ class StatisticsVisualizationModule(Module):
         # Tür: M02 (kraken2) -> detection -> yoksa None (asla sabit varsayım)
         species = taxonomy.get("dominant_organism") or self.ctx.detection.get("ncbi_species")
 
+        # Her veri alanının hangi modülden geldiği -> boş çıktının nedenini rapora taşı.
+        # (Sessiz "0 sonuç" yerine "yapılamadı: <neden>" ayrımı M18'de bu haritayla yapılır.)
+        FIELD_MODULE = {
+            "taxonomy": "M02", "genome_stats": "M04", "checkm2": "M04",
+            "closest_5_strains": "M05", "annotation": "M06", "mlst": "M07",
+            "amr_genes": "M08", "virulence_genes": "M09", "plasmids": "M10",
+            "mobile_elements": "M11", "prophages": "M12", "variants": "M13",
+        }
+        data_availability = {
+            field: {"module": mod, **_availability(module_summaries.get(mod))}
+            for field, mod in FIELD_MODULE.items()
+        }
+        unavailable = [f for f, a in data_availability.items() if not a["available"]]
+
         dashboard = {
             "project_id": run_dir.name,
             "data_type": self.ctx.detection.get("data_type"),
@@ -84,6 +125,7 @@ class StatisticsVisualizationModule(Module):
             "prophages": prophages,
             "variants": variants,
             "module_status": {k: v.get("status") for k, v in module_summaries.items()},
+            "data_availability": data_availability,
             "modules": module_summaries,
         }
 
@@ -96,4 +138,5 @@ class StatisticsVisualizationModule(Module):
             "amr_gene_count": len(amr),
             "virulence_gene_count": len(vir),
             "plasmid_count": len(plasmids),
+            "fields_unavailable": unavailable,
         })

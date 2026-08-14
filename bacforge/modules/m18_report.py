@@ -149,18 +149,29 @@ class FinalReportExportModule(Module):
         e = self._esc
         mstat = dash.get("module_status", {}) or {}
         mods = dash.get("modules", {}) or {}
+        av = dash.get("data_availability", {}) or {}  # alan -> {available, status, reason, module}
         st = lambda m: mstat.get(m, "—")
         reason = lambda m: (mods.get(m, {}) or {}).get("details", {}).get("reason", "")
         modstat = lambda m: (mods.get(m, {}) or {}).get("statistics", {}) or {}
 
         counters = {"t": 0, "f": 0}
 
-        def table(caption, headers, rows):
+        def table(caption, headers, rows, avail=None):
             counters["t"] += 1
             n = counters["t"]
             if not rows:
-                return (f'<div class="cap">Table {n}. {e(caption)}</div>'
-                        f'<p class="na">Veri yok / analiz uygulanmadi.</p>')
+                cap = f'<div class="cap">Table {n}. {e(caption)}</div>'
+                # avail verildiyse "yapıldı ama 0 sonuç" ile "yapılamadı: neden"i ayır.
+                if avail is not None and not avail.get("available", True):
+                    mod = avail.get("module", "")
+                    status = avail.get("status") or "—"
+                    why = avail.get("reason") or "bilinmiyor"
+                    tag = " · ".join(x for x in (mod, status) if x and x != "—")
+                    tag = f" ({e(tag)})" if tag else ""
+                    return (cap + f'<p class="na">&#9888; Yapılamadı{tag} — {e(why)}</p>')
+                if avail is not None and avail.get("available"):
+                    return cap + '<p class="na">Analiz yapıldı; kayda değer bulgu yok (0 sonuç).</p>'
+                return cap + '<p class="na">Veri yok / analiz uygulanmadi.</p>'
             head = "".join(f"<th>{e(h)}</th>" for h in headers)
             body = "".join("<tr>" + "".join(f"<td>{e(c)}</td>" for c in r) + "</tr>" for r in rows)
             return (f'<div class="cap">Table {n}. {e(caption)}</div>'
@@ -296,7 +307,8 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
         t_m05 = table("M05 — En yakin referanslar (FastANI)",
                       ["Rank", "Organizma", "Accession", "ANI %", "Query cov %"],
                       [[c.get("rank"), c.get("organism"), c.get("assembly_accession"),
-                        c.get("ani_percent"), c.get("query_coverage")] for c in c5])
+                        c.get("ani_percent"), c.get("query_coverage")] for c in c5],
+                      avail=av.get("closest_5_strains"))
 
         t_m06 = table("M06 — Genom anotasyonu (Bakta)", ["Ozellik", "Sayi"],
                       [["CDS", m06s.get("cds")], ["tRNA", m06s.get("trna")], ["rRNA", m06s.get("rrna")],
@@ -320,40 +332,46 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
         mlst_head = (f'<p>Şema: <b>{e(mlst_scheme)}</b> &nbsp;|&nbsp; Sekans Tipi (ST): '
                      f'<b>{e(mlst_st)}</b></p>' if mlst_scheme else '<p class="na">MLST sonucu yok.</p>')
         t_m07 = mlst_head + table("M07 — MLST alel profili (locus / allele numarası)",
-                                  ["Lokus", "Alel no"], mlst_rows)
+                                  ["Lokus", "Alel no"], mlst_rows, avail=av.get("mlst"))
 
         amr = dash.get("amr_genes", []) or []
         t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus)",
                       ["Gen", "Ilac sinifi", "Alt sinif", "Identity %", "Contig"],
                       [[a.get("gene_symbol"), a.get("drug_class"), a.get("subclass"),
-                        a.get("identity"), a.get("contig")] for a in amr])
+                        a.get("identity"), a.get("contig")] for a in amr],
+                      avail=av.get("amr_genes"))
 
         vir = dash.get("virulence_genes", []) or []
         t_m09 = table("M09 — Virülans genleri (VFDB/ABRicate) — ilk 25",
                       ["Gen", "Identity %", "Coverage", "Contig"],
                       [[v.get("gene_symbol"), v.get("identity"), v.get("coverage"), v.get("contig")]
-                       for v in vir[:25]])
+                       for v in vir[:25]], avail=av.get("virulence_genes"))
 
         plas = dash.get("plasmids", []) or []
         t_m10 = table("M10 — Plazmidler (MOB-suite)", ["Plasmid", "Contig", "Boyut", "Rep tipi"],
-                      [[p.get("plasmid_id"), p.get("contig"), p.get("size"), p.get("rep_type")] for p in plas])
+                      [[p.get("plasmid_id"), p.get("contig"), p.get("size"), p.get("rep_type")] for p in plas],
+                      avail=av.get("plasmids"))
 
         mge = dash.get("mobile_elements", []) or []
         t_m11 = table("M11 — Mobil genetik elemanlar (ISEScan) — ilk 25",
                       ["Eleman", "Tip", "Contig", "Baslangic", "Bitis"],
                       [[m.get("element_id"), m.get("type"), m.get("contig"), m.get("start"), m.get("end")]
-                       for m in mge[:25]])
+                       for m in mge[:25]], avail=av.get("mobile_elements"))
 
         prop = dash.get("prophages", []) or []
         t_m12 = table("M12 — Prophage/viral bolgeler (geNomad)",
                       ["Phage ID", "Contig", "Uzunluk", "Topoloji", "Virus skoru"],
                       [[p.get("phage_id"), p.get("contig"), p.get("length"), p.get("topology"),
-                        p.get("virus_score")] for p in prop])
+                        p.get("virus_score")] for p in prop], avail=av.get("prophages"))
 
         var = dash.get("variants", []) or []
         n_coding = sum(1 for v in var if v.get("gene") or v.get("locus_tag"))
-        var_head = (f'<p>Toplam varyant: <b>{len(var)}</b> &nbsp;|&nbsp; kodlayan (CDS) bölgede: '
-                    f'<b>{n_coding}</b>. Referans: en yakın suş (GenBank anotasyonlu).</p>')
+        _var_av = av.get("variants") or {}
+        if _var_av and not _var_av.get("available", True):
+            var_head = ''  # yapılamadıysa sahte "Toplam varyant: 0" gösterme; neden tabloda
+        else:
+            var_head = (f'<p>Toplam varyant: <b>{len(var)}</b> &nbsp;|&nbsp; kodlayan (CDS) bölgede: '
+                        f'<b>{n_coding}</b>. Referans: en yakın suş (GenBank anotasyonlu).</p>')
         # Kodlayan (gen/CDS) varyantlari one al -> anlamli
         var_sorted = sorted(var, key=lambda v: 0 if (v.get("gene") or v.get("locus_tag")) else 1)
         t_m13 = var_head + table(
@@ -361,7 +379,8 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
             ["Contig", "Pozisyon", "Tip", "Ref>Alt", "Gen", "Locus_tag", "CDS etkisi (EFFECT)", "Ürün"],
             [[v.get("contig"), v.get("pos"), v.get("type"),
               f"{v.get('ref')}>{v.get('alt')}", v.get("gene") or "—", v.get("locus_tag") or "—",
-              v.get("effect") or "—", (v.get("product") or "")[:40]] for v in var_sorted[:30]])
+              v.get("effect") or "—", (v.get("product") or "")[:40]] for v in var_sorted[:30]],
+            avail=av.get("variants"))
 
         t_refs = table("Kullanilan araclar ve bilimsel referanslar (DOI)",
                        ["Arac", "Surum", "Amac", "DOI"],
