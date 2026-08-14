@@ -71,9 +71,43 @@ class PhageCRISPRDefenseModule(Module):
         with open(std_dir / "prophages.json", "w", encoding="utf-8") as f:
             json.dump({"prophages": phages}, f, indent=2, ensure_ascii=False)
 
+        # İçerik-farkında yönlendirme: geNomad her contig'i kromozom/plazmid/virüs sınıflar.
+        # Bu sınıflandırma bakteri/faj kolunu yönlendirmek için tablo olarak çıkarılır.
+        classification = []
+        counts = {"chromosome": 0, "plasmid": 0, "virus": 0}
+        for agg in genomad_out.rglob("*_aggregated_classification.tsv"):
+            lines = agg.read_text(encoding="utf-8", errors="replace").splitlines()
+            if not lines:
+                continue
+            ix = {h: i for i, h in enumerate(lines[0].split("\t"))}
+
+            def fnum(p, c):
+                try:
+                    return float(p[ix[c]]) if c in ix and ix[c] < len(p) else 0.0
+                except ValueError:
+                    return 0.0
+            for ln in lines[1:]:
+                if not ln.strip():
+                    continue
+                p = ln.split("\t")
+                scores = {"chromosome": fnum(p, "chromosome_score"),
+                          "plasmid": fnum(p, "plasmid_score"), "virus": fnum(p, "virus_score")}
+                cls = max(scores, key=scores.get)
+                counts[cls] += 1
+                classification.append({"contig": p[ix.get("seq_name", 0)] if p else "",
+                                       "class": cls, **{k: round(v, 4) for k, v in scores.items()}})
+        with open(std_dir / "contig_classification.tsv", "w", encoding="utf-8") as f:
+            f.write("Contig\tClass\tChromosome_score\tPlasmid_score\tVirus_score\n")
+            for c in classification:
+                f.write(f"{c['contig']}\t{c['class']}\t{c['chromosome']}\t{c['plasmid']}\t{c['virus']}\n")
+        with open(std_dir / "contig_classification.json", "w", encoding="utf-8") as f:
+            json.dump({"classification": classification, "counts": counts}, f, indent=2, ensure_ascii=False)
+
         if tool_ran:
-            self.write_summary(status="PASS", statistics={"phage_count": len(phages)},
-                               details={"tool": "geNomad", "note": "CRISPR (cctyper) & DefenseFinder: Milestone 2"})
+            self.write_summary(status="PASS",
+                               statistics={"phage_count": len(phages), "routing": counts},
+                               details={"tool": "geNomad", "routing": counts,
+                                        "note": "içerik-farkında yönlendirme: kromozom/plazmid/virüs"})
         else:
             self.write_summary(status="WARNING", statistics={"phage_count": len(phages)},
                                warnings=[f"geNomad başarısız (exit {prov.get('exit_code')}). Log: {prov.get('log')}"])
