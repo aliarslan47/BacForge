@@ -17,3 +17,6 @@ test_data/
 samples/**/*.fastq.gz
 fastp.html
 fastp.json
+
+# RGI --local artığı (global CARD kullanılıyor)
+localDB/
