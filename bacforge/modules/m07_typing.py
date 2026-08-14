@@ -7,6 +7,7 @@ Outputs: mlst_summary.tsv, cgmlst_summary.tsv, species_plugins.json, M07_summary
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 from .base import Module
@@ -97,6 +98,47 @@ class StrainTypingModule(Module):
         if kap_dbs:
             with open(std_dir / "kaptive.json", "w", encoding="utf-8") as fh:
                 json.dump(kaptive_out, fh, indent=2, ensure_ascii=False)
+
+        # chewBBACA cgMLST — şema databases/cgmlst/<tür>/ altında varsa AlleleCall; yoksa dürüst NA.
+        dbp = Path(self.ctx.config["paths"]["db"])
+        species_key = None
+        if "acinetobacter" in species_l and "baumannii" in species_l:
+            species_key = "acinetobacter_baumannii"
+        elif "klebsiella" in species_l:
+            species_key = "klebsiella_pneumoniae"
+        elif "escherichia" in species_l or "coli" in species_l:
+            species_key = "escherichia_coli"
+        if species_key:
+            sch_root = dbp / "cgmlst" / species_key
+            sch = None
+            if sch_root.exists():
+                if any(sch_root.glob("*.fasta")):
+                    sch = sch_root
+                else:  # Chewie-NS iç içe indirir: loci fasta'ları tek alt-klasörde
+                    for sub in sorted(sch_root.iterdir()):
+                        if sub.is_dir() and any(sub.glob("*.fasta")):
+                            sch = sub
+                            break
+            if sch:
+                gin = self.sub_dir("02_work") / "cg_input"
+                gin.mkdir(parents=True, exist_ok=True)
+                shutil.copy(genome, gin / "genome.fasta")
+                cg_out = self.sub_dir("02_work") / "chewbbaca"
+                if cg_out.exists():
+                    shutil.rmtree(cg_out, ignore_errors=True)
+                prov = r.run("chewbbaca", ["chewBBACA.py", "AlleleCall", "-i", str(gin), "-g", str(sch),
+                             "-o", str(cg_out), "--cpu", str(util.threads(self.ctx))],
+                             conda_env=E.get("chewbbaca", "base"), version_cmd=["chewBBACA.py", "--version"], check=False)
+                res_tsv = next(cg_out.rglob("results_alleles.tsv"), None)
+                if res_tsv and res_tsv.exists():
+                    shutil.copy(res_tsv, std_dir / "cgmlst_summary.tsv")
+                    lines = res_tsv.read_text(encoding="utf-8", errors="replace").splitlines()
+                    called = sum(1 for v in lines[1].split("\t")[1:] if v.isdigit()) if len(lines) >= 2 else 0
+                    plugin_results["chewBBACA_cgMLST"] = f"{called} lokus çağrıldı"
+                else:
+                    plugin_results["chewBBACA_cgMLST"] = f"FAIL (exit {prov.get('exit_code')})"
+            else:
+                plugin_results["chewBBACA_cgMLST"] = f"NOT_AVAILABLE (şema yok: databases/cgmlst/{species_key}/)"
 
         with open(std_dir / "species_plugins.json", "w", encoding="utf-8") as fh:
             json.dump(plugin_results, fh, indent=2)

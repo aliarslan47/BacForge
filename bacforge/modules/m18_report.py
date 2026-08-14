@@ -346,6 +346,16 @@ tek dikey hat degil; <b>dallan &rarr; genome.fasta'da birles &rarr; paralel yelp
                         for lbl, v in kap.items() if isinstance(v, dict)]
             t_m07 = t_m07 + table("M07 — Kapsül/O-antijen tiplemesi (Kaptive)",
                                   ["Lokus tipi", "Locus", "Tip", "Güven"], kap_rows)
+        # cgMLST (chewBBACA) ve diğer tür-özel eklentiler — species_plugins.json
+        plug = {}
+        plug_f = run_dir / "M07_STRAIN_TYPING" / "species_plugins.json"
+        if plug_f.exists():
+            try:
+                plug = json.load(open(plug_f, encoding="utf-8")) or {}
+            except Exception:
+                plug = {}
+        if plug.get("chewBBACA_cgMLST"):
+            t_m07 = t_m07 + f'<p>cgMLST (chewBBACA): <b>{e(plug["chewBBACA_cgMLST"])}</b></p>'
 
         amr = dash.get("amr_genes", []) or []
         t_m08 = table("M08 — Antimikrobiyal direnç genleri (AMRFinderPlus + RGI/CARD + ResFinder)",

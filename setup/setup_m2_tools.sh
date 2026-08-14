@@ -23,3 +23,19 @@ if [ -f "$DB/card/card.json" ]; then echo "[=] CARD DB var"; else
   else echo "[HATA] CARD indirilemedi"; fi
 fi
 echo "== M2 araç kurulumu bitti =="
+
+# --- Milestone 2 (parti 2): chewBBACA + Polypolish + cgMLST şema ---
+if have_env ali-chewbbaca; then echo "[=] ali-chewbbaca var"; else
+  echo "[+] ali-chewbbaca kuruluyor"; conda create -n ali-chewbbaca $CHAN chewbbaca && echo "[ok] ali-chewbbaca" || echo "[HATA] ali-chewbbaca"
+fi
+if conda run -n ali-assembly-sr polypolish --version >/dev/null 2>&1; then echo "[=] polypolish var"; else
+  echo "[+] polypolish -> ali-assembly-sr"; conda install -n ali-assembly-sr $CHAN polypolish && echo "[ok] polypolish" || echo "[HATA] polypolish"
+fi
+# A. baumannii cgMLST şeması (Chewie-NS). Diğer türler için: -sp <tür> -sc <id>.
+mkdir -p "$DB/cgmlst"
+if ls "$DB"/cgmlst/acinetobacter_baumannii/*/[!s]*.fasta >/dev/null 2>&1; then echo "[=] A.baumannii cgMLST şeması var"; else
+  echo "[+] A. baumannii cgMLST şeması indiriliyor (Chewie-NS)"
+  conda run -n ali-chewbbaca chewBBACA.py DownloadSchema -sp "Acinetobacter baumannii" -sc 1 \
+    -o "$DB/cgmlst/acinetobacter_baumannii" 2>&1 | tail -3 && echo "[ok] cgMLST şema" || echo "[HATA] cgMLST şema (Chewie-NS erişilemedi)"
+fi
+echo "== M2 parti-2 kurulumu bitti =="
