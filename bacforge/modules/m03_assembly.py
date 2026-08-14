@@ -129,8 +129,46 @@ class AssemblyModule(Module):
                 r.run("spades", ["spades.py", "--isolate", "-s", str(clean_r1), "-o", str(spades_dir), "-t", str(t)],
                       conda_env=E["asm_sr"], version_cmd=["spades.py", "--version"])
 
-            shutil.copy(spades_dir / "contigs.fasta", draft_fasta)
-            self.write_summary(status="PASS", details={"assembler": "SPAdes"})
+            # Polypolish — kısa-okuma cilası (bwa -a çoklu-hizalama -> filter -> polish)
+            contigs = spades_dir / "contigs.fasta"
+            polisher = None
+            sr_warn = []
+            if clean_r2.exists() and contigs.exists():
+                pol = self.sub_dir("02_work") / "polypolish"
+                pol.mkdir(parents=True, exist_ok=True)
+                draft0 = pol / "draft.fasta"
+                shutil.copy(contigs, draft0)
+                sam1, sam2 = pol / "aln1.sam", pol / "aln2.sam"
+                f1, f2 = pol / "filt1.sam", pol / "filt2.sam"
+                polished = pol / "polished.fasta"
+                ok = r.run("bwa_index", ["bwa", "index", str(draft0)],
+                           conda_env=E["asm_sr"], check=False).get("exit_code") == 0
+                if ok:
+                    ok = r.run("bwa_mem_r1", ["bwa", "mem", "-t", str(t), "-a", str(draft0), str(clean_r1)],
+                               conda_env=E["asm_sr"], stdout_path=str(sam1), check=False).get("exit_code") == 0
+                if ok:
+                    ok = r.run("bwa_mem_r2", ["bwa", "mem", "-t", str(t), "-a", str(draft0), str(clean_r2)],
+                               conda_env=E["asm_sr"], stdout_path=str(sam2), check=False).get("exit_code") == 0
+                if ok:
+                    ok = r.run("polypolish_filter", ["polypolish", "filter", "--in1", str(sam1), "--in2", str(sam2),
+                               "--out1", str(f1), "--out2", str(f2)], conda_env=E["asm_sr"],
+                               version_cmd=["polypolish", "--version"], check=False).get("exit_code") == 0
+                if ok:
+                    ok = r.run("polypolish", ["polypolish", "polish", str(draft0), str(f1), str(f2)],
+                               conda_env=E["asm_sr"], stdout_path=str(polished), check=False).get("exit_code") == 0
+                if ok and polished.exists() and polished.stat().st_size > 0:
+                    shutil.copy(polished, draft_fasta)
+                    polisher = "Polypolish"
+                else:
+                    shutil.copy(contigs, draft_fasta)
+                    sr_warn.append("Polypolish başarısız; cilalanmamış SPAdes assembly kullanıldı.")
+            else:
+                shutil.copy(contigs, draft_fasta)
+                if not clean_r2.exists():
+                    sr_warn.append("Tek-uçlu okuma; Polypolish atlandı (çift-uç gerekir).")
+            self.write_summary(status="PASS",
+                               details={"assembler": "SPAdes", "polisher": polisher or "none"},
+                               warnings=sr_warn or None)
             return
 
         # 4. HYBRID (Unicycler / SPAdes hybrid)
