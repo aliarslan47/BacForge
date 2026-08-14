@@ -44,7 +44,7 @@ class StrainTypingModule(Module):
             mlst_status = "PASS"
 
         # 3. Species-Specific Plugin Evaluation
-        species = self.ctx.detection.get("ncbi_species", "Unknown")
+        species = util.resolve_species(self.ctx) or "Unknown"  # resume'da M02 dosyasından da çözer
         plugin_results = {}
 
         species_l = (species or "").lower()

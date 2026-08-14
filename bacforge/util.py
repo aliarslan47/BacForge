@@ -77,6 +77,32 @@ def load_detection(ctx) -> dict:
     return {}
 
 
+def resolve_species(ctx):
+    """Türü önce bellek-içi ctx.detection'dan, yoksa M02'nin kalıcı çıktısından çözer.
+    Resume'da M02/M05 'done' diye atlanınca tür bellekte olmaz; bu durumda sessizce
+    'Unknown'a düşmek yerine diskteki M02 sonucundan okunur (dürüstlük/robustluk)."""
+    det = getattr(ctx, "detection", None)
+    if det is None:
+        det = {}
+        ctx.detection = det
+    sp = det.get("ncbi_species")
+    if sp:
+        return sp
+    m02 = Path(ctx.run_dir) / "M02_TAXONOMIC_QC"
+    for fname, key in (("species_identification.json", "species"),
+                       ("taxonomy.json", "dominant_organism")):
+        p = m02 / fname
+        if p.exists():
+            try:
+                sp = (json.load(open(p, encoding="utf-8")) or {}).get(key)
+            except Exception:
+                sp = None
+            if sp:
+                det["ncbi_species"] = sp  # sonraki modüller için belleğe geri yaz
+                return sp
+    return None
+
+
 def platform(ctx) -> str:
     return load_detection(ctx).get("platform", "unknown")
 

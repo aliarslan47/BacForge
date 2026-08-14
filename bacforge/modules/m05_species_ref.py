@@ -316,7 +316,7 @@ class SpeciesReferenceIdentificationModule(Module):
         hits = self._blast(query_fa, work / "blast_query.tsv", self.BLAST_TIMEOUT, r) if blast_contig else None
 
         # kraken2 (M02) capraz-kontrol
-        kraken_species = self.ctx.detection.get("ncbi_species")
+        kraken_species = util.resolve_species(self.ctx)  # resume'da M02 dosyasından da çözer
 
         organism = None
         if hits:

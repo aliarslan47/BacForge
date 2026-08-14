@@ -3,7 +3,27 @@
 > "Nerede kaldık" anlık görüntüsü. Detay Claude belleğinde (`bacforge` memory).
 
 **Konum:** `/home/ali/BacForge/` · git: `git@github.com:aliarslan47/BacForge.git`
-**Son güncelleme:** 2026-08-12
+**Son güncelleme:** 2026-08-14
+
+## 2026-08-14 — README çift-dilli + Pipeline DAG + M17/M18 dürüstlük + M05/M07 tür-resume
+- **README çift-dilli (TR+EN)** (push `9ef8b47`): `README.md` (TR) + `README.en.md` (EN), VirusForge deseni
+  (dil-geçiş linki, mermaid akış, 19 modül matrisi, araç kaydı repo linkleriyle, *A. baumannii* doğrulanmış
+  örnek). "MVP iskelet" → **Milestone 1 tamam** durumuna güncellendi.
+- **Pipeline DAG** `docs/pipeline_architecture.html`: TR/EN toggle'lı etkileşimli DAG; kenarlar gerçek `run()`
+  okuma noktalarından çıkarıldı (bir Explore ajanı 19 modül + base.py okudu, dosya:satır ile doğruladı).
+  Şema **dallan→birleş→yelpaze→birleş→rapor**; **M04 genome.fasta = merkezi hub** (11 modüle dağıtır),
+  **M05 closest_5 = ikincil hub** (M06/M13/M14/M16 referansı).
+- **M17/M18 DÜRÜSTLÜK DÜZELTMESİ** (push `1d840bb`): kritik olmayan modül çökünce (orchestrator atlıyor) M17
+  çıktıyı **sessizce boş** sayıyordu → M18 raporu "0 sonuç" gösteriyordu (ör. AMR çökse "0 direnç geni" =
+  yalan). Artık M17 her alan için `data_availability` + **neden** üretiyor (`_availability`: PASS/WARNING=var;
+  FAIL/SKIPPED/NOT_APPLICABLE/özet-yok=neden). M18 `table()` "yapıldı ama 0 sonuç" ile "⚠️ Yapılamadı
+  (Mxx·durum) — neden"i ayırıyor. 8 liste-tablosuna (M05,M07,M08–M13) avail geçti. Birim+entegrasyon test geçti.
+- **M05/M07 TÜR-RESUME DÜZELTMESİ:** tür yalnız bellek-içi `ctx.detection["ncbi_species"]`'deydi; resume'da
+  M02/M05 "done" diye atlanınca M07 `"Unknown"` görüp tür-özel plugin (Kleborate/ECTyper/SISTR) seçemiyordu.
+  `util.resolve_species(ctx)` eklendi: bellek boşsa M02'nin `species_identification.json` (→ `taxonomy.json`
+  fallback)'undan çözüp belleğe geri yazar. M05:319 + M07:47 buna bağlandı. 4 senaryo test geçti.
+- **NOT — M14 AKTİF:** `m14_context.GenomicContextModule` REGISTRY'de canlı M14 (`modules/__init__.py`);
+  "eski/inaktif faj-seti" DEĞİL. 19 modül sayımı (M00–M18) M14 dahil olduğunda tutar.
 
 ## 2026-08-12 — LONG (ONT) YOLU UÇTAN UCA DOĞRULANDI + kimya-otomatik polishing
 Kullanıcı: "önce long, eksik tool varsa ekle, uçtan uca, eksik istemem." Long yolunda eksikler bulunup EKLENDİ:
