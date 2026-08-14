@@ -5,6 +5,25 @@
 **Konum:** `/home/ali/BacForge/` · git: `git@github.com:aliarslan47/BacForge.git`
 **Son güncelleme:** 2026-08-14
 
+## 2026-08-14 (2) — MILESTONE 2 ÇOK-ARAÇLI ZENGİNLEŞTİRME (8 araç) + gerçek short koşu
+Her modüle mevcut aracın yanına 2./3. araç eklendi (kaynak-etiketli, dürüst durum, rapora yansıyor):
+- **M08 AMR:** + RGI/CARD (`rgi main`) + ResFinder (`abricate --db resfinder`) → amr.json by_source+source_counts,
+  M18 AMR tablosuna "Kaynak" sütunu. **M10:** + PlasmidFinder (`abricate --db plasmidfinder`).
+  **M11:** + IntegronFinder (`ali-mge`, .summary CALIN/complete/In0). **M07:** + Kaptive (kpsc_k/o, ab_k/o)
+  + chewBBACA cgMLST (şema-güdümlü `databases/cgmlst/<tür>/`). **M12:** geNomad içerik-farkında yönlendirme
+  (per-contig kromozom/plazmid/virüs → contig_classification). **M03:** Polypolish kısa-okuma cilası (bwa -a→filter→polish).
+- **Kurulanlar:** ali-rgi (RGI 6.0.8 + CARD 4.0.1), ali-kaptive (3.3.2 + kpsc/ab K-O DB), ali-chewbbaca (3.5.4)
+  + A.baumannii cgMLST şema (Chewie-NS, 4780 lokus, `databases/cgmlst/` git dışı), Polypolish 0.7.1 (ali-assembly-sr).
+  IntegronFinder & abricate(resfinder/plasmidfinder) zaten vardı. Kurulum: `setup/setup_m2_tools.sh`.
+- **BUG fix:** `util.ENV`'e `chewbbaca` eşlemesi eklendi (yoksa base'de exit 127).
+- **GERÇEK SHORT KOŞU** `runs/20260814_191344_short` (DRR035591, A.baumannii): 19 modül M15(NA) hariç PASS.
+  Polypolish✓, AMR 15+33+9 (AMRFinder/RGI/ResFinder), Kaptive K(Typeable)/OC1, chewBBACA **2240 lokus**,
+  IntegronFinder 1, geNomad routing 48/34/185, M05 ANI %99.52 (BLAST atlandı→FastANI). report.html hepsini gösteriyor.
+- **NOT:** short assembly 260 contig (185'i <1kb) → dairesel harita parçalı görünür (gerçek eksik DEĞİL, kısa-okuma doğası).
+  Kapalı kromozom için long/hybrid gerekir.
+- **BEKLEYEN:** M05 remote BLAST bu ortamda takılıyor (NCBI throttle) — koşuda elle sonlandırılıp FastANI ile geçildi;
+  NCBI'ye sonra bakılacak. Eski long/hybrid/short koşuları silindi (temiz başlangıç).
+
 ## 2026-08-14 — README çift-dilli + Pipeline DAG + M17/M18 dürüstlük + M05/M07 tür-resume
 - **README çift-dilli (TR+EN)** (push `9ef8b47`): `README.md` (TR) + `README.en.md` (EN), VirusForge deseni
   (dil-geçiş linki, mermaid akış, 19 modül matrisi, araç kaydı repo linkleriyle, *A. baumannii* doğrulanmış
