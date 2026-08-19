@@ -2,9 +2,9 @@
 
 A modular, end-to-end analysis platform for prokaryotic (bacterial) whole-genome sequencing (WGS).
 
-[![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/input-short%20%C2%B7%20long%20%C2%B7%20hybrid-3f8a7d)](https://aliarslan47.github.io/BacForge/pipeline_architecture.html)
-[![Milestone](https://img.shields.io/badge/Milestone%201-complete-brightgreen)](#roadmap)
+[![Pipeline DAG](https://img.shields.io/badge/pipeline-DAG-0d6b8f)](https://aliarslan47.github.io/BacForge/pipeline_architecture.html)
+[![platform](https://img.shields.io/badge/platform-short%20%C2%B7%20long%20%C2%B7%20hybrid-2f8f5b)](https://aliarslan47.github.io/BacForge/pipeline_architecture.html)
+[![modules](https://img.shields.io/badge/modules-M00%E2%80%93M18-c07211)](https://aliarslan47.github.io/BacForge/pipeline_architecture.html)
 
 [Türkçe](README.md) · English
 
