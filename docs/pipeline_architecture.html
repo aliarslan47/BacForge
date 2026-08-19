@@ -8,36 +8,39 @@
   :root{
     --bg:#eef1f4; --card:#ffffff; --node:#ffffff; --bd:#dfe4e9; --ink:#161b21; --mut:#69737d;
     --grid:#dbe1e7;
-    --dna:#0d6b8f; --rna:#c07211; --shared:#3f8a7d; --dec:#8a5cd0;
-    --dna-bg:#e7f0f5; --rna-bg:#f7ecdb; --shared-bg:#e6f0ed; --na-bd:#c3cad0; --na-bg:#eef0f2; --na-tx:#96a0a9;
+    --sh:#0d6b8f; --plat:#2f8f5b; --cond:#c07211; --diag:#7d6fae; --dec:#8a5cd0;
+    --sh-bg:#e7f0f5; --plat-bg:#e4f1ea; --cond-bg:#f7ecdb; --diag-bg:#eeeaf6;
+    --na-bd:#c3cad0; --na-tx:#96a0a9;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#0c1014; --card:#141920; --node:#1b2129; --bd:#28303a; --ink:#e7ebef; --mut:#8a95a0;
       --grid:#20272f;
-      --dna:#4bb3d6; --rna:#e0a24e; --shared:#63b6a7; --dec:#b28cf0;
-      --dna-bg:#12303c; --rna-bg:#3a2c16; --shared-bg:#173029; --na-bd:#39424c; --na-bg:#191e24; --na-tx:#5c6771;
+      --sh:#4bb3d6; --plat:#5cc08a; --cond:#e0a24e; --diag:#a99bd0; --dec:#b28cf0;
+      --sh-bg:#12303c; --plat-bg:#15321f; --cond-bg:#3a2c16; --diag-bg:#221d33;
+      --na-bd:#39424c; --na-tx:#5c6771;
     }
   }
   :root[data-theme="dark"]{
     --bg:#0c1014; --card:#141920; --node:#1b2129; --bd:#28303a; --ink:#e7ebef; --mut:#8a95a0;
     --grid:#20272f;
-    --dna:#4bb3d6; --rna:#e0a24e; --shared:#63b6a7; --dec:#b28cf0;
-    --dna-bg:#12303c; --rna-bg:#3a2c16; --shared-bg:#173029; --na-bd:#39424c; --na-bg:#191e24; --na-tx:#5c6771;
+    --sh:#4bb3d6; --plat:#5cc08a; --cond:#e0a24e; --diag:#a99bd0; --dec:#b28cf0;
+    --sh-bg:#12303c; --plat-bg:#15321f; --cond-bg:#3a2c16; --diag-bg:#221d33;
+    --na-bd:#39424c; --na-tx:#5c6771;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55;padding:30px 22px 38px}
-  .wrap{max-width:1060px;margin:0 auto}
+  .wrap{max-width:1180px;margin:0 auto}
   .toggle{display:flex;justify-content:flex-end;margin-bottom:14px}
   .toggle .grp{display:inline-flex;border:1px solid var(--bd);border-radius:999px;overflow:hidden;background:var(--card)}
   .langbtn{border:0;background:transparent;color:var(--mut);font:600 12.5px system-ui;
     padding:6px 16px;cursor:pointer;letter-spacing:.3px}
-  .langbtn.on{background:var(--dna);color:#fff}
-  .langbtn:focus-visible{outline:2px solid var(--dna);outline-offset:2px}
+  .langbtn.on{background:var(--sh);color:#fff}
+  .langbtn:focus-visible{outline:2px solid var(--sh);outline-offset:2px}
   header{margin-bottom:22px}
   h1{font-size:26px;margin:0 0 6px;letter-spacing:-.4px;text-wrap:balance}
-  .sub{color:var(--mut);font-size:13.5px;margin:0;max-width:66ch}
+  .sub{color:var(--mut);font-size:13.5px;margin:0;max-width:74ch}
   .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
   h2{font-size:15.5px;margin:32px 0 12px;letter-spacing:-.2px}
   .page[hidden]{display:none}
@@ -52,56 +55,51 @@
   .chips{display:flex;gap:12px;font-size:11.5px;flex-wrap:wrap}
   .chips span{display:inline-flex;align-items:center;gap:6px;color:var(--mut)}
   .chips i{width:11px;height:11px;border-radius:3px;display:inline-block;border:1.4px solid}
-  .i-dna{background:var(--dna-bg);border-color:var(--dna)}
-  .i-rna{background:var(--rna-bg);border-color:var(--rna)}
-  .i-sh{background:var(--shared-bg);border-color:var(--shared)}
-  svg.dag{display:block;min-width:940px}
+  .chips i.dash{border-style:dashed}
+  .i-sh{background:var(--sh-bg);border-color:var(--sh)}
+  .i-plat{background:var(--plat-bg);border-color:var(--plat)}
+  .i-cond{background:var(--cond-bg);border-color:var(--cond)}
+  .i-diag{background:var(--diag-bg);border-color:var(--diag)}
+  svg.dag{display:block;min-width:1120px}
   .node{fill:var(--node)}
-  .n-dna{stroke:var(--dna);stroke-width:1.6}
-  .n-rna{stroke:var(--rna);stroke-width:1.6}
-  .n-sh{stroke:var(--shared);stroke-width:1.6}
-  .chip-dna{fill:var(--dna)} .chip-rna{fill:var(--rna)} .chip-sh{fill:var(--shared)}
-  .chip-t{fill:#fff;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px}
-  .chip-t2{fill:#fff;font-family:ui-monospace,monospace;font-weight:700;font-size:10px}
+  .n-sh{stroke:var(--sh);stroke-width:1.6}
+  .n-plat{stroke:var(--plat);stroke-width:1.6}
+  .n-cond{stroke:var(--cond);stroke-width:1.6}
+  .n-diag{stroke:var(--diag);stroke-width:1.6}
+  .chip-sh{fill:var(--sh)} .chip-plat{fill:var(--plat)} .chip-cond{fill:var(--cond)} .chip-diag{fill:var(--diag)}
+  .chip-t{fill:#fff;font-family:ui-monospace,monospace;font-weight:700;font-size:11px}
   .nname{fill:var(--ink);font-size:12.5px;font-weight:600}
-  .ntool{fill:var(--mut);font-size:10px;font-family:ui-monospace,monospace}
-  .nname2{fill:var(--ink);font-size:11px;font-weight:600}
-  .ntool2{fill:var(--mut);font-size:8.4px;font-family:ui-monospace,monospace}
-  .port-dna{fill:var(--dna);stroke:var(--node);stroke-width:1.5}
-  .port-rna{fill:var(--rna);stroke:var(--node);stroke-width:1.5}
-  .port-sh{fill:var(--shared);stroke:var(--node);stroke-width:1.5}
+  .ntool{fill:var(--mut);font-size:9.5px;font-family:ui-monospace,monospace}
+  .port-sh{fill:var(--sh);stroke:var(--node);stroke-width:1.5}
+  .port-plat{fill:var(--plat);stroke:var(--node);stroke-width:1.5}
+  .port-cond{fill:var(--cond);stroke:var(--node);stroke-width:1.5}
+  .port-diag{fill:var(--diag);stroke:var(--node);stroke-width:1.5}
   .edge{fill:none;stroke-width:1.9}
-  .rail{fill:none;stroke-width:2.1;opacity:.85}
-  .e-dna{stroke:var(--dna)} .e-rna{stroke:var(--rna)} .e-sh{stroke:var(--shared)}
-  .hubring{fill:none;stroke:var(--shared);stroke-width:1.3;opacity:.42;stroke-dasharray:4 3}
+  .e-sh{stroke:var(--sh)} .e-plat{stroke:var(--plat)} .e-cond{stroke:var(--cond)}
+  .e-diag{stroke:var(--diag);stroke-dasharray:5 4;stroke-width:1.6}
   .decision{fill:var(--node);stroke:var(--dec);stroke-width:1.6}
-  .dec-t{fill:var(--dec);font-size:10.5px;font-weight:700;font-family:ui-monospace,monospace}
-  .dec-s{fill:var(--mut);font-size:9.5px}
-  .note{fill:var(--mut);font-size:9.5px;font-style:italic}
+  .dec-t{fill:var(--dec);font-size:11px;font-weight:700;font-family:ui-monospace,monospace}
+  .dec-s{fill:var(--mut);font-size:9px}
+  .hublbl{fill:var(--mut);font-size:9.5px;font-style:italic}
 
   .tbl-wrap{overflow-x:auto;border:1px solid var(--bd);border-radius:12px;background:var(--card);margin-top:12px}
   table{width:100%;border-collapse:collapse;min-width:680px}
   th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
-  thead th{background:var(--dna-bg);color:var(--dna);font-size:11px;letter-spacing:.4px;text-transform:uppercase}
+  thead th{background:var(--plat-bg);color:var(--plat);font-size:11px;letter-spacing:.4px;text-transform:uppercase}
   tbody tr:last-child td{border-bottom:none}
-  td.code{font-family:ui-monospace,monospace;font-weight:700;color:var(--dna);white-space:nowrap}
+  td.code{font-family:ui-monospace,monospace;font-weight:700;color:var(--sh);white-space:nowrap}
   td.mod{font-weight:600;white-space:nowrap}
-  td.tools{font-family:ui-monospace,monospace;font-size:12px}
-  td.dep{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--mut)}
+  td.dep{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut);white-space:nowrap}
   .na{color:var(--na-tx);font-style:italic}
-  .tag{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px}
-  .t-sh{background:var(--shared-bg);color:var(--shared)}
-  .t-en{background:var(--dna-bg);color:var(--dna)}
-  .t-co{background:var(--rna-bg);color:var(--rna)}
+  .tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;
+    background:var(--sh-bg);color:var(--sh)}
+  .tag.plat{background:var(--plat-bg);color:var(--plat)}
+  .tag.cond{background:var(--cond-bg);color:var(--cond)}
+  .tag.diag{background:var(--diag-bg);color:var(--diag)}
   .envs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
   .env{font-family:ui-monospace,monospace;font-size:12px;background:var(--card);border:1px solid var(--bd);
     border-radius:7px;padding:4px 10px}
-  .env b{color:var(--dna)}
-  details{margin-top:12px;border:1px solid var(--bd);border-radius:12px;background:var(--card);overflow:hidden}
-  summary{cursor:pointer;padding:11px 14px;font-size:13px;font-weight:600;color:var(--ink);user-select:none}
-  summary:hover{color:var(--dna)}
-  pre.edges{margin:0;padding:6px 16px 16px;overflow-x:auto;font-family:ui-monospace,monospace;
-    font-size:11.5px;line-height:1.7;color:var(--ink)}
+  .env b{color:var(--sh)}
   footer{margin-top:28px;padding-top:15px;border-top:1px solid var(--bd);color:var(--mut);font-size:12px}
 </style>
 </head>
@@ -119,13 +117,15 @@
   <div class="page" data-lang="tr">
     <header>
       <h1>BacForge Pipeline DAG</h1>
-      <p class="sub">Bakteriyel WGS analiz hattı, <span class="mono">M00</span>–<span class="mono">M18</span>.
-        Şema: <b>dallan → birleş → yelpaze → birleş → rapor</b>. Platform kararı (<span class="mono">short·long·hybrid</span>)
-        M01/M03'te <i>araç</i> seçer ve <span class="mono">M04 genome.fasta</span> hub'ında birleşir; buradan bağımsız
-        zenginleştirme modülleri yelpaze gibi açılır, <span class="mono">M17</span>'de toplanıp <span class="mono">M18</span>
-        raporunda birleşir. Kenarlar gerçek <span class="mono">run()</span> okuma noktalarından çıkarıldı.</p>
+      <p class="sub">Gerçek <span class="mono">run()</span> bağımlılık grafiği. Platform kararı
+        <span class="mono">M00</span>'da verilir (short / long / hybrid / assembly); <span class="mono">M01</span> ve
+        <span class="mono">M03</span> kendi içinde platforma göre dallanır ve <span class="mono">M04</span>'te birleşir.
+        <span class="mono">M04</span> (cilalı genom) merkez hub'dır — <span class="mono">M05–M16</span> ondan dallanır.
+        <span class="mono">M17</span> tüm analiz çıktılarını toplar, <span class="mono">M18</span> rapor kapstone'dur.
+        Koşullu modüller (<span class="mono">M13–M16</span>) girdi yoksa <span class="mono">N/A</span> damgalanır.</p>
     </header>
 
+    <figure style="margin:0">
     <div class="canvas">
       <div class="bar">
         <span class="dot" style="background:#e0605a"></span>
@@ -134,178 +134,134 @@
         <span class="fn">bacforge · pipeline.dag</span>
         <span class="sp"></span>
         <span class="chips">
-          <span><i class="i-sh"></i> omurga</span>
-          <span><i class="i-dna"></i> zenginleştirme</span>
-          <span><i class="i-rna"></i> karşılaştırmalı</span>
+          <span><i class="i-sh"></i> ortak</span>
+          <span><i class="i-plat"></i> platform</span>
+          <span><i class="i-cond"></i> koşullu</span>
+          <span><i class="i-diag dash"></i> tanı</span>
         </span>
       </div>
-      <svg class="dag" viewBox="0 0 1000 945" role="img" aria-label="BacForge pipeline DAG. Omurga M00, platform kararı, M01, M02, M03, M04 hub. M04 genome.fasta 12 zenginleştirme modülüne yelpaze gibi açılır; M17 toplayıcıda birleşir ve M18 raporunda biter.">
+      <svg class="dag" viewBox="0 0 1240 1300" role="img" aria-label="BacForge pipeline DAG, gerçek run bağımlılıklarından. Omurga M00 platform kararı, M01 okuma QC, M03 assembly, M04 birleşme ve hub. M04'ten M05-M16 dallanır: sağ şeritte ortak analizler M05-M12, sol şeritte koşullu M13-M16. M02 taksonomik QC tanı dalı. M17 toplar, M18 rapor kapstone.">
         <defs>
           <pattern id="grid-tr" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="var(--grid)"/></pattern>
           <marker id="ah-tr" markerWidth="8" markerHeight="8" refX="5.5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="context-stroke"/></marker>
         </defs>
-        <rect x="0" y="0" width="1000" height="945" fill="url(#grid-tr)"/>
+        <rect x="0" y="0" width="1240" height="1300" fill="url(#grid-tr)"/>
 
-        <!-- spine edges -->
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 76 C500 79 500 81 500 84"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 124 C500 132 500 138 500 146"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 204 C500 214 500 222 500 234"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 292 C500 302 500 310 500 322"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 380 C500 392 500 400 500 410"/>
+        <!-- omurga -->
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 80 L570 84"/>
+        <path class="edge e-plat" marker-end="url(#ah-tr)" d="M570 140 C570 148 570 154 570 160"/>
+        <path class="edge e-plat" marker-end="url(#ah-tr)" d="M570 216 C570 224 570 232 570 240"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 296 C570 304 570 312 570 320"/>
+        <path class="edge e-diag" marker-end="url(#ah-tr)" d="M570 80 C450 100 300 130 300 160"/>
+        <!-- M04 hub → sağ ortak analizler -->
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C640 396 690 424 705 440"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C630 430 690 508 705 524"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C620 470 690 592 705 608"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C610 520 690 676 705 692"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C605 580 690 760 705 776"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C600 640 690 844 705 860"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C595 700 690 928 705 944"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 376 C590 760 690 1012 705 1028"/>
+        <!-- M04 hub → sol koşullu -->
+        <path class="edge e-cond" marker-end="url(#ah-tr)" d="M570 376 C400 396 150 396 150 412"/>
+        <path class="edge e-cond" marker-end="url(#ah-tr)" d="M570 376 C360 440 150 480 150 496"/>
+        <path class="edge e-cond" marker-end="url(#ah-tr)" d="M570 376 C340 500 150 564 150 580"/>
+        <path class="edge e-cond" marker-end="url(#ah-tr)" d="M570 376 C330 560 150 648 150 664"/>
+        <!-- toplama + kapstone -->
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M800 1056 C700 1080 620 1090 640 1100"/>
+        <path class="edge e-cond" marker-end="url(#ah-tr)" d="M150 720 C150 1000 400 1095 480 1100"/>
+        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M570 1156 C570 1166 570 1178 570 1190"/>
 
-        <!-- genome.fasta distribution rails + trunk -->
-        <path class="edge e-sh" d="M500 468 C500 486 500 500 500 514"/>
-        <path class="rail e-sh" d="M100 514 L900 514"/>
-        <path class="edge e-sh" d="M500 514 L500 646"/>
-        <path class="rail e-sh" d="M100 646 L900 646"/>
-        <!-- row1 stubs -->
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M100 514 L100 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M260 514 L260 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M420 514 L420 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M580 514 L580 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M740 514 L740 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M900 514 L900 542"/>
-        <!-- row2 stubs -->
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M100 646 L100 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M260 646 L260 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M420 646 L420 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M580 646 L580 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M740 646 L740 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M900 646 L900 674"/>
+        <!-- omurga düğümleri -->
+        <g><rect class="node n-sh" x="475" y="24" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="34" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="47" text-anchor="middle">M00</text><text class="nname" x="533" y="48">Girdi Tespiti</text><text class="ntool" x="487" y="69">auto-detect · sha256</text><circle class="port-sh" cx="570" cy="80" r="4"/></g>
+        <g><path class="decision" d="M570 84 L618 112 L570 140 L522 112 Z"/><text class="dec-t" x="570" y="109" text-anchor="middle">platform</text><text class="dec-s" x="570" y="123" text-anchor="middle">short · long · hybrid</text></g>
+        <g><rect class="node n-plat" x="475" y="160" width="190" height="56" rx="11"/><rect class="chip-plat" x="485" y="170" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="183" text-anchor="middle">M01</text><text class="nname" x="533" y="184">Okuma QC</text><text class="ntool" x="487" y="205">fastp · NanoPlot · Filtlong</text><circle class="port-plat" cx="570" cy="160" r="4"/><circle class="port-plat" cx="570" cy="216" r="4"/></g>
+        <g><rect class="node n-plat" x="475" y="240" width="190" height="56" rx="11"/><rect class="chip-plat" x="485" y="250" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="263" text-anchor="middle">M03</text><text class="nname" x="533" y="264">Genom Kurgusu</text><text class="ntool" x="487" y="285">SPAdes·Flye·Unicycler</text><circle class="port-plat" cx="570" cy="240" r="4"/><circle class="port-plat" cx="570" cy="296" r="4"/></g>
+        <g><rect class="node n-sh" x="475" y="320" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="330" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="343" text-anchor="middle">M04</text><text class="nname" x="533" y="344">Cila &amp; QC</text><text class="ntool" x="487" y="365">QUAST · CheckM2 · hub</text><circle class="port-sh" cx="570" cy="320" r="4"/><circle class="port-sh" cx="570" cy="376" r="4"/></g>
 
-        <!-- aggregation funnel to M17 -->
-        <path class="edge e-dna" marker-end="url(#ah-tr)" d="M200 732 C240 758 280 764 320 776"/>
-        <path class="edge e-dna" marker-end="url(#ah-tr)" d="M500 748 C500 758 500 766 500 776"/>
-        <path class="edge e-dna" marker-end="url(#ah-tr)" d="M800 732 C760 758 720 764 680 776"/>
-        <!-- M17 -> M18 -->
-        <path class="edge e-sh" marker-end="url(#ah-tr)" d="M500 828 C500 840 500 848 500 858"/>
+        <!-- tanı dalı -->
+        <g><rect class="node n-diag" x="205" y="160" width="190" height="56" rx="11"/><rect class="chip-diag" x="215" y="170" width="40" height="18" rx="5"/><text class="chip-t" x="235" y="183" text-anchor="middle">M02</text><text class="nname" x="263" y="184">Taksonomik QC</text><text class="ntool" x="217" y="205">Kraken2 · Bracken</text><circle class="port-diag" cx="300" cy="160" r="4"/></g>
 
-        <!-- ===== SPINE NODES ===== -->
-        <rect class="hubring" x="388" y="404" width="224" height="70" rx="13"/>
-        <g><rect class="node n-sh" x="395" y="18" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="28" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="41" text-anchor="middle">M00</text><text class="nname" x="453" y="42">Girdi &amp; Tespit</text><text class="ntool" x="405" y="65">okuma tipi / data_type</text><circle class="port-sh" cx="500" cy="76" r="4"/></g>
-        <g><path class="decision" d="M500 84 L546 104 L500 124 L454 104 Z"/><text class="dec-t" x="500" y="101" text-anchor="middle">platform?</text><text class="dec-s" x="500" y="114" text-anchor="middle">short·long·hybrid</text></g>
-        <g><rect class="node n-sh" x="395" y="146" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="156" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="169" text-anchor="middle">M01</text><text class="nname" x="453" y="170">Okuma QC</text><text class="ntool" x="405" y="193">fastp · NanoPlot · Filtlong</text><circle class="port-sh" cx="500" cy="146" r="4"/><circle class="port-sh" cx="500" cy="204" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="234" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="244" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="257" text-anchor="middle">M02</text><text class="nname" x="453" y="258">Taksonomik QC</text><text class="ntool" x="405" y="281">Kraken2 + Bracken → tür</text><circle class="port-sh" cx="500" cy="234" r="4"/><circle class="port-sh" cx="500" cy="292" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="322" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="332" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="345" text-anchor="middle">M03</text><text class="nname" x="453" y="346">Assembly</text><text class="ntool" x="405" y="369">SPAdes · Flye · Unicycler</text><circle class="port-sh" cx="500" cy="322" r="4"/><circle class="port-sh" cx="500" cy="380" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="410" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="420" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="433" text-anchor="middle">M04</text><text class="nname" x="453" y="434">Cila &amp; Genom QC</text><text class="ntool" x="405" y="457">QUAST·CheckM2 → genome.fasta</text><circle class="port-sh" cx="500" cy="410" r="4"/><circle class="port-sh" cx="500" cy="468" r="4"/></g>
-        <text class="note" x="614" y="443">hub</text>
+        <!-- sağ: ortak analizler -->
+        <g><rect class="node n-sh" x="705" y="412" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="422" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="435" text-anchor="middle">M05</text><text class="nname" x="763" y="436">Tür &amp; En-Yakın</text><text class="ntool" x="717" y="457">BLAST·FastANI·barrnap</text><circle class="port-sh" cx="705" cy="440" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="496" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="506" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="519" text-anchor="middle">M06</text><text class="nname" x="763" y="520">Anotasyon</text><text class="ntool" x="717" y="541">Bakta</text><circle class="port-sh" cx="705" cy="524" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="580" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="590" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="603" text-anchor="middle">M07</text><text class="nname" x="763" y="604">Suş Tiplendirme</text><text class="ntool" x="717" y="625">mlst·Kleborate·Kaptive</text><circle class="port-sh" cx="705" cy="608" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="664" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="674" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="687" text-anchor="middle">M08</text><text class="nname" x="763" y="688">Direnç (AMR)</text><text class="ntool" x="717" y="709">AMRFinderPlus·RGI·ResFinder</text><circle class="port-sh" cx="705" cy="692" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="748" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="758" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="771" text-anchor="middle">M09</text><text class="nname" x="763" y="772">Virülans</text><text class="ntool" x="717" y="793">VFDB (ABRicate)</text><circle class="port-sh" cx="705" cy="776" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="832" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="842" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="855" text-anchor="middle">M10</text><text class="nname" x="763" y="856">Plazmid</text><text class="ntool" x="717" y="877">MOB-suite·PlasmidFinder</text><circle class="port-sh" cx="705" cy="860" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="916" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="926" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="939" text-anchor="middle">M11</text><text class="nname" x="763" y="940">Mobil Elementler</text><text class="ntool" x="717" y="961">ISEScan·IntegronFinder</text><circle class="port-sh" cx="705" cy="944" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="1000" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="1010" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="1023" text-anchor="middle">M12</text><text class="nname" x="763" y="1024">Faj &amp; CRISPR</text><text class="ntool" x="717" y="1045">geNomad</text><circle class="port-sh" cx="705" cy="1028" r="4"/><circle class="port-sh" cx="800" cy="1056" r="4"/></g>
 
-        <!-- ===== ENRICHMENT ROW 1 ===== -->
-        <g><rect class="node n-dna" x="25" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="33" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="51" y="563" text-anchor="middle">M05</text><text class="nname2" x="75" y="563">Tür &amp; Ref</text><text class="ntool2" x="34" y="588">FastANI·blastn</text><circle class="port-dna" cx="100" cy="542" r="3.5"/><circle class="port-dna" cx="100" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="185" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="193" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="211" y="563" text-anchor="middle">M06</text><text class="nname2" x="235" y="563">Anotasyon</text><text class="ntool2" x="194" y="588">Bakta</text><circle class="port-dna" cx="260" cy="542" r="3.5"/><circle class="port-dna" cx="260" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="345" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="353" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="371" y="563" text-anchor="middle">M07</text><text class="nname2" x="395" y="563">Tiplendirme</text><text class="ntool2" x="354" y="588">mlst·Kleborate</text><circle class="port-dna" cx="420" cy="542" r="3.5"/><circle class="port-dna" cx="420" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="505" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="513" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="531" y="563" text-anchor="middle">M08</text><text class="nname2" x="555" y="563">AMR</text><text class="ntool2" x="514" y="588">AMRFinder+</text><circle class="port-dna" cx="580" cy="542" r="3.5"/><circle class="port-dna" cx="580" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="665" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="673" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="691" y="563" text-anchor="middle">M09</text><text class="nname2" x="715" y="563">Virülans</text><text class="ntool2" x="674" y="588">ABRicate·VFDB</text><circle class="port-dna" cx="740" cy="542" r="3.5"/><circle class="port-dna" cx="740" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="825" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="833" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="851" y="563" text-anchor="middle">M10</text><text class="nname2" x="875" y="563">Plazmid</text><text class="ntool2" x="834" y="588">MOB-suite</text><circle class="port-dna" cx="900" cy="542" r="3.5"/><circle class="port-dna" cx="900" cy="600" r="3.5"/></g>
+        <!-- sol: koşullu -->
+        <g><rect class="node n-cond" x="55" y="412" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="422" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="435" text-anchor="middle">M13</text><text class="nname" x="113" y="436">Varyantlar</text><text class="ntool" x="67" y="457">Snippy</text><circle class="port-cond" cx="150" cy="412" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="496" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="506" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="519" text-anchor="middle">M14</text><text class="nname" x="113" y="520">Genomik Bağlam</text><text class="ntool" x="67" y="541">clinker</text><circle class="port-cond" cx="150" cy="496" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="580" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="590" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="603" text-anchor="middle">M15</text><text class="nname" x="113" y="604">Karşılaştırmalı</text><text class="ntool" x="67" y="625">Panaroo (batch)</text><circle class="port-cond" cx="150" cy="580" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="664" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="674" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="687" text-anchor="middle">M16</text><text class="nname" x="113" y="688">Filogenomik</text><text class="ntool" x="67" y="709">Mash + NJ</text><circle class="port-cond" cx="150" cy="664" r="4"/><circle class="port-cond" cx="150" cy="720" r="4"/></g>
 
-        <!-- ===== ENRICHMENT ROW 2 ===== -->
-        <g><rect class="node n-dna" x="25" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="33" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="51" y="695" text-anchor="middle">M11</text><text class="nname2" x="75" y="695">Mobil Elem.</text><text class="ntool2" x="34" y="720">ISEScan</text><circle class="port-dna" cx="100" cy="674" r="3.5"/><circle class="port-dna" cx="100" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="185" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="193" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="211" y="695" text-anchor="middle">M12</text><text class="nname2" x="235" y="695">Faj/CRISPR</text><text class="ntool2" x="194" y="720">geNomad</text><circle class="port-dna" cx="260" cy="674" r="3.5"/><circle class="port-dna" cx="260" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="345" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="353" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="371" y="695" text-anchor="middle">M13</text><text class="nname2" x="395" y="695">Varyant</text><text class="ntool2" x="354" y="720">Snippy</text><circle class="port-dna" cx="420" cy="674" r="3.5"/><circle class="port-dna" cx="420" cy="732" r="3.5"/></g>
-        <g><rect class="node n-rna" x="505" y="674" width="150" height="58" rx="10"/><rect class="chip-rna" x="513" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="531" y="695" text-anchor="middle">M14</text><text class="nname2" x="555" y="695">Bağlam</text><text class="ntool2" x="514" y="720">clinker</text><circle class="port-rna" cx="580" cy="674" r="3.5"/><circle class="port-rna" cx="580" cy="732" r="3.5"/></g>
-        <g><rect class="node n-rna" x="665" y="674" width="150" height="58" rx="10"/><rect class="chip-rna" x="673" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="691" y="695" text-anchor="middle">M15</text><text class="nname2" x="715" y="695">Karşılaşt.</text><text class="ntool2" x="674" y="720">Panaroo</text><circle class="port-rna" cx="740" cy="674" r="3.5"/><circle class="port-rna" cx="740" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="825" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="833" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="851" y="695" text-anchor="middle">M16</text><text class="nname2" x="875" y="695">Filogenomik</text><text class="ntool2" x="834" y="720">Mash·NJ</text><circle class="port-dna" cx="900" cy="674" r="3.5"/><circle class="port-dna" cx="900" cy="732" r="3.5"/></g>
+        <!-- toplama + rapor -->
+        <g><rect class="node n-sh" x="475" y="1044" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="1054" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="1067" text-anchor="middle">M17</text><text class="nname" x="533" y="1068">İstatistik</text><text class="ntool" x="487" y="1089">toplar: M02–M13</text><circle class="port-sh" cx="570" cy="1100" r="4"/></g>
+        <g><rect class="node n-sh" x="475" y="1190" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="1200" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="1213" text-anchor="middle">M18</text><text class="nname" x="533" y="1214">Rapor</text><text class="ntool" x="487" y="1235">HTML/PDF · kapstone</text><circle class="port-sh" cx="570" cy="1190" r="4"/></g>
 
-        <!-- ===== AGGREGATE + REPORT ===== -->
-        <text class="note" x="500" y="770" text-anchor="middle">toplayıcı ← M02·M04·M05·M07·M08·M09·M10·M11·M12·M13</text>
-        <g><rect class="node n-sh" x="175" y="776" width="650" height="52" rx="11"/><rect class="chip-sh" x="185" y="785" width="40" height="18" rx="5"/><text class="chip-t" x="205" y="798" text-anchor="middle">M17</text><text class="nname" x="233" y="799">İstatistik &amp; Toplama</text><text class="ntool" x="560" y="799">→ dashboard_data.json</text><circle class="port-sh" cx="320" cy="776" r="4"/><circle class="port-sh" cx="500" cy="776" r="4"/><circle class="port-sh" cx="680" cy="776" r="4"/><circle class="port-sh" cx="500" cy="828" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="858" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="868" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="881" text-anchor="middle">M18</text><text class="nname" x="453" y="882">Rapor &amp; Export</text><text class="ntool" x="405" y="905">TR+EN HTML · zip · provenance</text><circle class="port-sh" cx="500" cy="858" r="4"/></g>
-        <text class="note" x="620" y="895">* rapor ayrıca M01·M06·M14·M16 görsellerini gömer</text>
+        <text class="hublbl" x="570" y="400" text-anchor="middle">hub → M05–M16</text>
       </svg>
     </div>
+    <figcaption class="sub" style="margin:10px 2px 0">Renkli düz oklar gerçek <span class="mono">run()</span> bağımlılıklarıdır (koddaki <span class="mono">inputs()</span> guard'ları + okunan çıktılar). Platform ayrımı <span class="mono">M01/M03</span> içinde (short/long/hybrid) yapılır ve <span class="mono">M04</span>'te birleşir; <span class="mono">M04→M18</span> platform-agnostiktir. Kesikli mor: tanı dalı (<span class="mono">M02</span>). Kritik modüller <span class="mono">M00·M03·M04·M06</span> — başarısızsa koşu durur.</figcaption>
+    </figure>
 
-    <h2>Modül matrisi — araç &amp; bağımlılık</h2>
+    <h2>Modül matrisi — araçlar &amp; bağımlılık</h2>
     <div class="tbl-wrap"><table>
-      <thead><tr><th style="width:48px">Kod</th><th style="width:190px">Modül</th><th>Araç(lar)</th><th style="width:230px">Girdi ← (kaynak)</th></tr></thead>
+      <thead><tr><th style="width:52px">Kod</th><th style="width:170px">Modül</th><th style="width:110px">Bağımlılık</th><th>Araç &amp; işlev</th></tr></thead>
       <tbody>
-        <tr><td class="code">M00</td><td class="mod">Girdi &amp; Tespit <span class="tag t-sh">OMURGA</span></td><td class="tools">detect_platform</td><td class="dep">ham girdi · <span class="mono">data_type</span> üretir</td></tr>
-        <tr><td class="code">M01</td><td class="mod">Okuma QC <span class="tag t-sh">OMURGA</span></td><td class="tools">fastp (short/hybrid) · NanoPlot+Filtlong (long/hybrid)</td><td class="dep">M00 (data_type) · ham okumalar</td></tr>
-        <tr><td class="code">M02</td><td class="mod">Taksonomik QC <span class="tag t-sh">OMURGA</span></td><td class="tools">Kraken2 + Bracken</td><td class="dep">M00 (data_type) · M01 (temiz okuma) → <span class="mono">ncbi_species</span></td></tr>
-        <tr><td class="code">M03</td><td class="mod">Assembly <span class="tag t-sh">OMURGA</span></td><td class="tools">SPAdes (short) · Flye+Medaka (long) · Unicycler (hybrid)</td><td class="dep">M00 (data_type) · M01 (okumalar)</td></tr>
-        <tr><td class="code">M04</td><td class="mod">Cila &amp; Genom QC <span class="tag t-sh">OMURGA · HUB</span></td><td class="tools">QUAST · CheckM2</td><td class="dep">M03 (draft_genome.fasta) → <span class="mono">genome.fasta</span> (11 modüle dağıtır)</td></tr>
-        <tr><td class="code">M05</td><td class="mod">Tür &amp; Referans <span class="tag t-en">ZENGİN</span></td><td class="tools">barrnap · blastn · NCBI datasets · FastANI</td><td class="dep">M04 (genome) · M02 (ncbi_species) → closest_5/10</td></tr>
-        <tr><td class="code">M06</td><td class="mod">Anotasyon <span class="tag t-en">ZENGİN</span></td><td class="tools">Bakta · minimap2 (ref-sıralı harita)</td><td class="dep">M04 (genome) · M05 (closest ref, ops.)</td></tr>
-        <tr><td class="code">M07</td><td class="mod">Suş Tiplendirme <span class="tag t-en">ZENGİN</span></td><td class="tools">mlst · Kleborate / ECTyper / SISTR</td><td class="dep">M04 (genome) · M02/M05 (species)</td></tr>
-        <tr><td class="code">M08</td><td class="mod">AMR <span class="tag t-en">ZENGİN</span></td><td class="tools">AMRFinderPlus</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M09</td><td class="mod">Virülans <span class="tag t-en">ZENGİN</span></td><td class="tools">ABRicate (VFDB)</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M10</td><td class="mod">Plazmid <span class="tag t-en">ZENGİN</span></td><td class="tools">MOB-suite (mob_recon)</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M11</td><td class="mod">Mobil Genetik Elem. <span class="tag t-en">ZENGİN</span></td><td class="tools">ISEScan</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M12</td><td class="mod">Faj/CRISPR/Savunma <span class="tag t-en">ZENGİN</span></td><td class="tools">geNomad <span class="na">(içerik-farkında yönlendirme: planlı)</span></td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M13</td><td class="mod">Varyant <span class="tag t-en">ZENGİN</span></td><td class="tools">Snippy (+ Bakta ref anotasyonu)</td><td class="dep">M04 (query genome) · M05 (closest ref)</td></tr>
-        <tr><td class="code">M14</td><td class="mod">Genomik Bağlam <span class="tag t-co">KARŞ.</span></td><td class="tools">clinker (Biopython slicer)</td><td class="dep">M06 (GBK) · M05 (ref) · M08 (amr) · M09 (vir)</td></tr>
-        <tr><td class="code">M15</td><td class="mod">Karşılaştırmalı <span class="tag t-co">KARŞ.</span></td><td class="tools">Panaroo <span class="na">(≥2 örnek; tek örnekte N/A)</span></td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M16</td><td class="mod">Filogenomik <span class="tag t-en">ZENGİN</span></td><td class="tools">Mash + Biopython NJ ağacı</td><td class="dep">M04 (query) · M05 (ref + havuz; &lt;2 ref → N/A)</td></tr>
-        <tr><td class="code">M17</td><td class="mod">İstatistik <span class="tag t-sh">OMURGA</span></td><td class="tools">toplayıcı (harici araç yok)</td><td class="dep">M02·M04·M05·M07·M08·M09·M10·M11·M12·M13 → dashboard_data.json</td></tr>
-        <tr><td class="code">M18</td><td class="mod">Rapor &amp; Export <span class="tag t-sh">OMURGA</span></td><td class="tools">HTML export (harici araç yok)</td><td class="dep">M17 (dashboard) + M01·M06·M14·M16 görselleri → zip</td></tr>
+        <tr><td class="code">M00</td><td class="mod">Girdi Tespiti <span class="tag">ORTAK</span></td><td class="dep">—</td><td>Girdi + platform tespiti (sha256, short/long/hybrid/assembly) — <b>platform kararı</b></td></tr>
+        <tr><td class="code">M01</td><td class="mod">Okuma QC <span class="tag plat">PLATFORM</span></td><td class="dep">M00</td><td>fastp (short) · NanoPlot + Filtlong (long) · her ikisi (hybrid)</td></tr>
+        <tr><td class="code">M02</td><td class="mod">Taksonomik QC <span class="tag diag">TANI</span></td><td class="dep">M00 (+M01)</td><td>Kraken2 + Bracken — tür/kontaminasyon; DB yoksa N/A</td></tr>
+        <tr><td class="code">M03</td><td class="mod">Genom Kurgusu <span class="tag plat">PLATFORM</span></td><td class="dep">M00 (+M01)</td><td>SPAdes+Polypolish · Flye+Medaka · Unicycler · assembly kopya — <b>kritik</b></td></tr>
+        <tr><td class="code">M04</td><td class="mod">Cila &amp; QC <span class="tag">HUB</span></td><td class="dep">M03</td><td>QUAST · CheckM2 — birleşme noktası; cilalı <span class="mono">genome.fasta</span> tek devir. <b>Kritik</b></td></tr>
+        <tr><td class="code">M05</td><td class="mod">Tür &amp; En-Yakın-N <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>BLAST(nt) · datasets · FastANI · barrnap</td></tr>
+        <tr><td class="code">M06</td><td class="mod">Anotasyon <span class="tag">ORTAK</span></td><td class="dep">M04 (+M05)</td><td>Bakta (referans haritalama için minimap2) — <b>kritik</b></td></tr>
+        <tr><td class="code">M07</td><td class="mod">Suş Tiplendirme <span class="tag">ORTAK</span></td><td class="dep">M04 (+M02)</td><td>mlst · Kleborate · Kaptive · chewBBACA (tür-kapılı eklentiler)</td></tr>
+        <tr><td class="code">M08</td><td class="mod">Direnç (AMR) <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>AMRFinderPlus · RGI/CARD · ResFinder (ABRicate)</td></tr>
+        <tr><td class="code">M09</td><td class="mod">Virülans <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>VFDB (ABRicate)</td></tr>
+        <tr><td class="code">M10</td><td class="mod">Plazmid <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>MOB-suite · PlasmidFinder (ABRicate)</td></tr>
+        <tr><td class="code">M11</td><td class="mod">Mobil Elementler <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>ISEScan · IntegronFinder</td></tr>
+        <tr><td class="code">M12</td><td class="mod">Faj &amp; CRISPR <span class="tag">ORTAK</span></td><td class="dep">M04</td><td>geNomad — profaj + CRISPR (DB yoksa N/A)</td></tr>
+        <tr><td class="code">M13</td><td class="mod">Varyantlar <span class="tag cond">KOŞULLU</span></td><td class="dep">M04 (+M05)</td><td>Snippy — en-yakın referans yoksa N/A</td></tr>
+        <tr><td class="code">M14</td><td class="mod">Genomik Bağlam <span class="tag cond">KOŞULLU</span></td><td class="dep">M06 (+M05·M08·M09)</td><td>clinker — hedef gen bölgesi sinteni; girdi yoksa N/A</td></tr>
+        <tr><td class="code">M15</td><td class="mod">Karşılaştırmalı <span class="tag cond">KOŞULLU</span></td><td class="dep">M04</td><td>Panaroo — yalnız toplu koşu; tek örnekte N/A</td></tr>
+        <tr><td class="code">M16</td><td class="mod">Filogenomik <span class="tag cond">KOŞULLU</span></td><td class="dep">M04 (+M05)</td><td>Mash + Neighbor-Joining (Biopython) — ≥2 referans gerekir</td></tr>
+        <tr><td class="code">M17</td><td class="mod">İstatistik <span class="tag">ORTAK</span></td><td class="dep">M00 (M02–M13 toplar)</td><td>Saf-Python toplama → dashboard verisi</td></tr>
+        <tr><td class="code">M18</td><td class="mod">Rapor <span class="tag">ORTAK</span></td><td class="dep">M17</td><td>HTML/PDF export (Jinja2/WeasyPrint) — kapstone/yaprak</td></tr>
       </tbody>
     </table></div>
-
-    <h2>Platform ekseni — kısa / uzun / hibrit</h2>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th style="width:70px">Modül</th><th>SHORT (Illumina)</th><th>LONG (ONT)</th><th>HYBRID</th></tr></thead>
-      <tbody>
-        <tr><td class="code">M01</td><td class="tools">fastp → clean_R1/R2</td><td class="tools">NanoPlot + Filtlong → filtered_long</td><td class="tools">her ikisi</td></tr>
-        <tr><td class="code">M02</td><td class="tools">temiz çift/tek okuma</td><td class="tools">tek: filtered_long</td><td class="tools">çift okuma</td></tr>
-        <tr><td class="code">M03</td><td class="tools">SPAdes --isolate</td><td class="tools">Flye (--nano-hq) + Medaka cila</td><td class="tools">Unicycler</td></tr>
-      </tbody>
-    </table></div>
-    <p class="sub" style="margin-top:8px">Platform yalnızca M01–M03 <i>araçlarını</i> değiştirir; <span class="mono">genome.fasta</span>'da birleşir,
-      M05–M18 platformdan bağımsızdır. <span class="mono">ASSEMBLY_INPUT</span> girişi M01/M03'ü atlar (FASTA doğrudan kopyalanır).</p>
 
     <h2>İzole conda ortamları</h2>
     <div class="envs">
-      <span class="env"><b>bacforge</b> · ana</span><span class="env">ali-illumina-qc</span><span class="env">ali-ont-qc</span>
-      <span class="env">ali-assembly-sr</span><span class="env">ali-flye</span><span class="env">ali-medaka</span>
-      <span class="env">ali-quast</span><span class="env">ali-checkm2</span><span class="env">ali-species</span>
-      <span class="env">ali-bakta</span><span class="env">ali-typing</span><span class="env">ali-amrfinder</span>
-      <span class="env">ali-virulence</span><span class="env">ali-mobsuite</span><span class="env">ali-mge</span>
-      <span class="env">ali-genomad</span><span class="env">ali-comparative</span><span class="env">ali-clinker</span>
-      <span class="env">ali-phylogeny</span><span class="env">ali-blast</span>
+      <span class="env"><b>bacforge</b> · ana</span><span class="env"><b>ali-illumina-qc</b></span><span class="env"><b>ali-ont-qc</b></span>
+      <span class="env"><b>ali-flye</b></span><span class="env"><b>ali-medaka</b></span><span class="env"><b>ali-assembly-sr</b></span>
+      <span class="env"><b>ali-quast</b></span><span class="env"><b>ali-checkm2</b></span><span class="env"><b>ali-qc</b></span>
+      <span class="env"><b>ali-blast</b></span><span class="env"><b>ali-species</b></span><span class="env"><b>ali-comparative</b></span>
+      <span class="env"><b>ali-bakta</b></span><span class="env"><b>ali-typing</b></span><span class="env"><b>ali-kleborate</b></span>
+      <span class="env"><b>ali-kaptive</b></span><span class="env"><b>ali-chewbbaca</b></span><span class="env"><b>ali-amrfinder</b></span>
+      <span class="env"><b>ali-rgi</b></span><span class="env"><b>ali-virulence</b></span><span class="env"><b>ali-mobsuite</b></span>
+      <span class="env"><b>ali-mge</b></span><span class="env"><b>ali-genomad</b></span><span class="env"><b>ali-clinker</b></span>
     </div>
-
-    <details>
-      <summary>Tam bağımlılık listesi — DAG kenarları (gerçek <span class="mono">run()</span> okuma noktaları)</summary>
-      <pre class="edges">M00  ← (yalnız ham girdi)
-M01  ← M00  (data_type; bellek-içi ctx.detection)
-M02  ← M00  (data_type) · M01  (clean_R1/R2 | filtered_long)
-M03  ← M00  (data_type) · M01  (clean_R1/R2 | filtered_long)
-M04  ← M03  (draft_genome.fasta + M03_summary.json cila durumu)
-M05  ← M04  (genome.fasta) · M02  (ncbi_species, bellek-içi)
-M06  ← M04  (genome.fasta) · M05  (closest_5 → ref fasta, ops.)
-M07  ← M04  (genome.fasta) · M02/M05  (ncbi_species)
-M08  ← M04  (genome.fasta)
-M09  ← M04  (genome.fasta)
-M10  ← M04  (genome.fasta)
-M11  ← M04  (genome.fasta)
-M12  ← M04  (genome.fasta)
-M13  ← M04  (genome.fasta = query) · M05  (closest_5 → ref)
-M14  ← M06  (annotation.gbk) · M05  (ref .gbff) · M08 (amr.json) · M09 (virulence.json)
-M15  ← M04  (genome.fasta; tek örnekte N/A)
-M16  ← M04  (genome.fasta = query) · M05  (closest_5 + indirme havuzu)
-M17  ← M02,M04,M05,M07,M08,M09,M10,M11,M12,M13  (standart JSON/TSV)
-M18  ← M17  (dashboard_data.json) + M01 (fastp) · M06 (harita) · M14 (clinker) · M16 (ağaç)
-
-HUB:  M04 genome.fasta → M05–M13, M15, M16 (11 modül yelpazesi)
-2. hub: M05 closest_5 → M06, M13, M14, M16 (referans şusları)
-Kanallar: dosya (run_dir/&lt;M..&gt;/) + bellek-içi ctx.detection (data_type, ncbi_species)</pre>
-    </details>
-
-    <footer>BacForge · bakteriyel WGS genom analiz platformu · github.com/aliarslan47/BacForge<br>
-      Değişmez: platform (short·long·hybrid) yalnız araç seçer, <span class="mono">genome.fasta</span> hub'ında birleşir;
-      zenginleştirme modülleri bağımsız/paralel; N/A dürüstçe gösterilir.</footer>
+    <footer>BacForge · Bakteri tam-genom (WGS) analiz platformu · github.com/aliarslan47/BacForge<br>
+      Kenarlar gerçek <span class="mono">run()</span> bağımlılıklarından çıkarıldı. Platform ayrımı modül-içi (<span class="mono">M01/M03</span>), <span class="mono">M04</span>'te birleşir; <span class="mono">M04→M18</span> platform-agnostik. Kritik modüller <span class="mono">M00·M03·M04·M06</span>.</footer>
   </div>
 
   <!-- ==================== ENGLISH ==================== -->
   <div class="page" data-lang="en" hidden>
     <header>
       <h1>BacForge Pipeline DAG</h1>
-      <p class="sub">Bacterial WGS analysis pipeline, <span class="mono">M00</span>–<span class="mono">M18</span>.
-        Shape: <b>branch → merge → fan → merge → report</b>. The platform decision (<span class="mono">short·long·hybrid</span>)
-        picks <i>tools</i> at M01/M03 and merges at the <span class="mono">M04 genome.fasta</span> hub; from there independent
-        enrichment modules fan out, are gathered at <span class="mono">M17</span> and rejoin in the <span class="mono">M18</span>
-        report. Edges are extracted from the real <span class="mono">run()</span> access sites.</p>
+      <p class="sub">The real <span class="mono">run()</span> dependency graph. The platform decision is made in
+        <span class="mono">M00</span> (short / long / hybrid / assembly); <span class="mono">M01</span> and
+        <span class="mono">M03</span> branch internally by platform and rejoin at <span class="mono">M04</span>.
+        <span class="mono">M04</span> (the polished genome) is the central hub — <span class="mono">M05–M16</span> fan out from it.
+        <span class="mono">M17</span> aggregates all analysis outputs and <span class="mono">M18</span> is the report capstone.
+        Conditional modules (<span class="mono">M13–M16</span>) are stamped <span class="mono">N/A</span> when inputs are absent.</p>
     </header>
 
+    <figure style="margin:0">
     <div class="canvas">
       <div class="bar">
         <span class="dot" style="background:#e0605a"></span>
@@ -314,155 +270,110 @@ Kanallar: dosya (run_dir/&lt;M..&gt;/) + bellek-içi ctx.detection (data_type, n
         <span class="fn">bacforge · pipeline.dag</span>
         <span class="sp"></span>
         <span class="chips">
-          <span><i class="i-sh"></i> backbone</span>
-          <span><i class="i-dna"></i> enrichment</span>
-          <span><i class="i-rna"></i> comparative</span>
+          <span><i class="i-sh"></i> shared</span>
+          <span><i class="i-plat"></i> platform</span>
+          <span><i class="i-cond"></i> conditional</span>
+          <span><i class="i-diag dash"></i> diagnostic</span>
         </span>
       </div>
-      <svg class="dag" viewBox="0 0 1000 945" role="img" aria-label="BacForge pipeline DAG. Backbone M00, platform decision, M01, M02, M03, M04 hub. M04 genome.fasta fans out to 12 enrichment modules; they merge at the M17 aggregator and end at the M18 report.">
+      <svg class="dag" viewBox="0 0 1240 1300" role="img" aria-label="BacForge pipeline DAG from real run dependencies. Spine M00 platform decision, M01 read QC, M03 assembly, M04 rejoin and hub. M04 fans to M05-M16: shared analyses M05-M12 on the right lane, conditional M13-M16 on the left lane. M02 taxonomic QC is a diagnostic branch. M17 aggregates, M18 report capstone.">
         <defs>
           <pattern id="grid-en" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="var(--grid)"/></pattern>
           <marker id="ah-en" markerWidth="8" markerHeight="8" refX="5.5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="context-stroke"/></marker>
         </defs>
-        <rect x="0" y="0" width="1000" height="945" fill="url(#grid-en)"/>
+        <rect x="0" y="0" width="1240" height="1300" fill="url(#grid-en)"/>
 
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 76 C500 79 500 81 500 84"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 124 C500 132 500 138 500 146"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 204 C500 214 500 222 500 234"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 292 C500 302 500 310 500 322"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 380 C500 392 500 400 500 410"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 80 L570 84"/>
+        <path class="edge e-plat" marker-end="url(#ah-en)" d="M570 140 C570 148 570 154 570 160"/>
+        <path class="edge e-plat" marker-end="url(#ah-en)" d="M570 216 C570 224 570 232 570 240"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 296 C570 304 570 312 570 320"/>
+        <path class="edge e-diag" marker-end="url(#ah-en)" d="M570 80 C450 100 300 130 300 160"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C640 396 690 424 705 440"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C630 430 690 508 705 524"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C620 470 690 592 705 608"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C610 520 690 676 705 692"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C605 580 690 760 705 776"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C600 640 690 844 705 860"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C595 700 690 928 705 944"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 376 C590 760 690 1012 705 1028"/>
+        <path class="edge e-cond" marker-end="url(#ah-en)" d="M570 376 C400 396 150 396 150 412"/>
+        <path class="edge e-cond" marker-end="url(#ah-en)" d="M570 376 C360 440 150 480 150 496"/>
+        <path class="edge e-cond" marker-end="url(#ah-en)" d="M570 376 C340 500 150 564 150 580"/>
+        <path class="edge e-cond" marker-end="url(#ah-en)" d="M570 376 C330 560 150 648 150 664"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M800 1056 C700 1080 620 1090 640 1100"/>
+        <path class="edge e-cond" marker-end="url(#ah-en)" d="M150 720 C150 1000 400 1095 480 1100"/>
+        <path class="edge e-sh" marker-end="url(#ah-en)" d="M570 1156 C570 1166 570 1178 570 1190"/>
 
-        <path class="edge e-sh" d="M500 468 C500 486 500 500 500 514"/>
-        <path class="rail e-sh" d="M100 514 L900 514"/>
-        <path class="edge e-sh" d="M500 514 L500 646"/>
-        <path class="rail e-sh" d="M100 646 L900 646"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M100 514 L100 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M260 514 L260 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M420 514 L420 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M580 514 L580 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M740 514 L740 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M900 514 L900 542"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M100 646 L100 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M260 646 L260 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M420 646 L420 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M580 646 L580 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M740 646 L740 674"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M900 646 L900 674"/>
+        <g><rect class="node n-sh" x="475" y="24" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="34" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="47" text-anchor="middle">M00</text><text class="nname" x="533" y="48">Input Detection</text><text class="ntool" x="487" y="69">auto-detect · sha256</text><circle class="port-sh" cx="570" cy="80" r="4"/></g>
+        <g><path class="decision" d="M570 84 L618 112 L570 140 L522 112 Z"/><text class="dec-t" x="570" y="109" text-anchor="middle">platform</text><text class="dec-s" x="570" y="123" text-anchor="middle">short · long · hybrid</text></g>
+        <g><rect class="node n-plat" x="475" y="160" width="190" height="56" rx="11"/><rect class="chip-plat" x="485" y="170" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="183" text-anchor="middle">M01</text><text class="nname" x="533" y="184">Read QC</text><text class="ntool" x="487" y="205">fastp · NanoPlot · Filtlong</text><circle class="port-plat" cx="570" cy="160" r="4"/><circle class="port-plat" cx="570" cy="216" r="4"/></g>
+        <g><rect class="node n-plat" x="475" y="240" width="190" height="56" rx="11"/><rect class="chip-plat" x="485" y="250" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="263" text-anchor="middle">M03</text><text class="nname" x="533" y="264">Assembly</text><text class="ntool" x="487" y="285">SPAdes·Flye·Unicycler</text><circle class="port-plat" cx="570" cy="240" r="4"/><circle class="port-plat" cx="570" cy="296" r="4"/></g>
+        <g><rect class="node n-sh" x="475" y="320" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="330" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="343" text-anchor="middle">M04</text><text class="nname" x="533" y="344">Polish &amp; QC</text><text class="ntool" x="487" y="365">QUAST · CheckM2 · hub</text><circle class="port-sh" cx="570" cy="320" r="4"/><circle class="port-sh" cx="570" cy="376" r="4"/></g>
 
-        <path class="edge e-dna" marker-end="url(#ah-en)" d="M200 732 C240 758 280 764 320 776"/>
-        <path class="edge e-dna" marker-end="url(#ah-en)" d="M500 748 C500 758 500 766 500 776"/>
-        <path class="edge e-dna" marker-end="url(#ah-en)" d="M800 732 C760 758 720 764 680 776"/>
-        <path class="edge e-sh" marker-end="url(#ah-en)" d="M500 828 C500 840 500 848 500 858"/>
+        <g><rect class="node n-diag" x="205" y="160" width="190" height="56" rx="11"/><rect class="chip-diag" x="215" y="170" width="40" height="18" rx="5"/><text class="chip-t" x="235" y="183" text-anchor="middle">M02</text><text class="nname" x="263" y="184">Taxonomic QC</text><text class="ntool" x="217" y="205">Kraken2 · Bracken</text><circle class="port-diag" cx="300" cy="160" r="4"/></g>
 
-        <rect class="hubring" x="388" y="404" width="224" height="70" rx="13"/>
-        <g><rect class="node n-sh" x="395" y="18" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="28" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="41" text-anchor="middle">M00</text><text class="nname" x="453" y="42">Input &amp; Detect</text><text class="ntool" x="405" y="65">read type / data_type</text><circle class="port-sh" cx="500" cy="76" r="4"/></g>
-        <g><path class="decision" d="M500 84 L546 104 L500 124 L454 104 Z"/><text class="dec-t" x="500" y="101" text-anchor="middle">platform?</text><text class="dec-s" x="500" y="114" text-anchor="middle">short·long·hybrid</text></g>
-        <g><rect class="node n-sh" x="395" y="146" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="156" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="169" text-anchor="middle">M01</text><text class="nname" x="453" y="170">Read QC</text><text class="ntool" x="405" y="193">fastp · NanoPlot · Filtlong</text><circle class="port-sh" cx="500" cy="146" r="4"/><circle class="port-sh" cx="500" cy="204" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="234" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="244" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="257" text-anchor="middle">M02</text><text class="nname" x="453" y="258">Taxonomic QC</text><text class="ntool" x="405" y="281">Kraken2 + Bracken → species</text><circle class="port-sh" cx="500" cy="234" r="4"/><circle class="port-sh" cx="500" cy="292" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="322" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="332" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="345" text-anchor="middle">M03</text><text class="nname" x="453" y="346">Assembly</text><text class="ntool" x="405" y="369">SPAdes · Flye · Unicycler</text><circle class="port-sh" cx="500" cy="322" r="4"/><circle class="port-sh" cx="500" cy="380" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="410" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="420" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="433" text-anchor="middle">M04</text><text class="nname" x="453" y="434">Polish &amp; Genome QC</text><text class="ntool" x="405" y="457">QUAST·CheckM2 → genome.fasta</text><circle class="port-sh" cx="500" cy="410" r="4"/><circle class="port-sh" cx="500" cy="468" r="4"/></g>
-        <text class="note" x="614" y="443">hub</text>
+        <g><rect class="node n-sh" x="705" y="412" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="422" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="435" text-anchor="middle">M05</text><text class="nname" x="763" y="436">Species &amp; Refs</text><text class="ntool" x="717" y="457">BLAST·FastANI·barrnap</text><circle class="port-sh" cx="705" cy="440" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="496" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="506" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="519" text-anchor="middle">M06</text><text class="nname" x="763" y="520">Annotation</text><text class="ntool" x="717" y="541">Bakta</text><circle class="port-sh" cx="705" cy="524" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="580" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="590" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="603" text-anchor="middle">M07</text><text class="nname" x="763" y="604">Strain Typing</text><text class="ntool" x="717" y="625">mlst·Kleborate·Kaptive</text><circle class="port-sh" cx="705" cy="608" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="664" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="674" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="687" text-anchor="middle">M08</text><text class="nname" x="763" y="688">AMR</text><text class="ntool" x="717" y="709">AMRFinderPlus·RGI·ResFinder</text><circle class="port-sh" cx="705" cy="692" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="748" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="758" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="771" text-anchor="middle">M09</text><text class="nname" x="763" y="772">Virulence</text><text class="ntool" x="717" y="793">VFDB (ABRicate)</text><circle class="port-sh" cx="705" cy="776" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="832" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="842" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="855" text-anchor="middle">M10</text><text class="nname" x="763" y="856">Plasmids</text><text class="ntool" x="717" y="877">MOB-suite·PlasmidFinder</text><circle class="port-sh" cx="705" cy="860" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="916" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="926" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="939" text-anchor="middle">M11</text><text class="nname" x="763" y="940">Mobile Elements</text><text class="ntool" x="717" y="961">ISEScan·IntegronFinder</text><circle class="port-sh" cx="705" cy="944" r="4"/></g>
+        <g><rect class="node n-sh" x="705" y="1000" width="190" height="56" rx="11"/><rect class="chip-sh" x="715" y="1010" width="40" height="18" rx="5"/><text class="chip-t" x="735" y="1023" text-anchor="middle">M12</text><text class="nname" x="763" y="1024">Phage &amp; CRISPR</text><text class="ntool" x="717" y="1045">geNomad</text><circle class="port-sh" cx="705" cy="1028" r="4"/><circle class="port-sh" cx="800" cy="1056" r="4"/></g>
 
-        <g><rect class="node n-dna" x="25" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="33" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="51" y="563" text-anchor="middle">M05</text><text class="nname2" x="75" y="563">Species &amp; Ref</text><text class="ntool2" x="34" y="588">FastANI·blastn</text><circle class="port-dna" cx="100" cy="542" r="3.5"/><circle class="port-dna" cx="100" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="185" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="193" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="211" y="563" text-anchor="middle">M06</text><text class="nname2" x="235" y="563">Annotation</text><text class="ntool2" x="194" y="588">Bakta</text><circle class="port-dna" cx="260" cy="542" r="3.5"/><circle class="port-dna" cx="260" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="345" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="353" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="371" y="563" text-anchor="middle">M07</text><text class="nname2" x="395" y="563">Typing</text><text class="ntool2" x="354" y="588">mlst·Kleborate</text><circle class="port-dna" cx="420" cy="542" r="3.5"/><circle class="port-dna" cx="420" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="505" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="513" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="531" y="563" text-anchor="middle">M08</text><text class="nname2" x="555" y="563">AMR</text><text class="ntool2" x="514" y="588">AMRFinder+</text><circle class="port-dna" cx="580" cy="542" r="3.5"/><circle class="port-dna" cx="580" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="665" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="673" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="691" y="563" text-anchor="middle">M09</text><text class="nname2" x="715" y="563">Virulence</text><text class="ntool2" x="674" y="588">ABRicate·VFDB</text><circle class="port-dna" cx="740" cy="542" r="3.5"/><circle class="port-dna" cx="740" cy="600" r="3.5"/></g>
-        <g><rect class="node n-dna" x="825" y="542" width="150" height="58" rx="10"/><rect class="chip-dna" x="833" y="551" width="36" height="17" rx="4"/><text class="chip-t2" x="851" y="563" text-anchor="middle">M10</text><text class="nname2" x="875" y="563">Plasmid</text><text class="ntool2" x="834" y="588">MOB-suite</text><circle class="port-dna" cx="900" cy="542" r="3.5"/><circle class="port-dna" cx="900" cy="600" r="3.5"/></g>
+        <g><rect class="node n-cond" x="55" y="412" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="422" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="435" text-anchor="middle">M13</text><text class="nname" x="113" y="436">Variants</text><text class="ntool" x="67" y="457">Snippy</text><circle class="port-cond" cx="150" cy="412" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="496" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="506" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="519" text-anchor="middle">M14</text><text class="nname" x="113" y="520">Genomic Context</text><text class="ntool" x="67" y="541">clinker</text><circle class="port-cond" cx="150" cy="496" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="580" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="590" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="603" text-anchor="middle">M15</text><text class="nname" x="113" y="604">Comparative</text><text class="ntool" x="67" y="625">Panaroo (batch)</text><circle class="port-cond" cx="150" cy="580" r="4"/></g>
+        <g><rect class="node n-cond" x="55" y="664" width="190" height="56" rx="11"/><rect class="chip-cond" x="65" y="674" width="40" height="18" rx="5"/><text class="chip-t" x="85" y="687" text-anchor="middle">M16</text><text class="nname" x="113" y="688">Phylogenomics</text><text class="ntool" x="67" y="709">Mash + NJ</text><circle class="port-cond" cx="150" cy="664" r="4"/><circle class="port-cond" cx="150" cy="720" r="4"/></g>
 
-        <g><rect class="node n-dna" x="25" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="33" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="51" y="695" text-anchor="middle">M11</text><text class="nname2" x="75" y="695">Mobile Elem.</text><text class="ntool2" x="34" y="720">ISEScan</text><circle class="port-dna" cx="100" cy="674" r="3.5"/><circle class="port-dna" cx="100" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="185" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="193" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="211" y="695" text-anchor="middle">M12</text><text class="nname2" x="235" y="695">Phage/CRISPR</text><text class="ntool2" x="194" y="720">geNomad</text><circle class="port-dna" cx="260" cy="674" r="3.5"/><circle class="port-dna" cx="260" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="345" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="353" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="371" y="695" text-anchor="middle">M13</text><text class="nname2" x="395" y="695">Variants</text><text class="ntool2" x="354" y="720">Snippy</text><circle class="port-dna" cx="420" cy="674" r="3.5"/><circle class="port-dna" cx="420" cy="732" r="3.5"/></g>
-        <g><rect class="node n-rna" x="505" y="674" width="150" height="58" rx="10"/><rect class="chip-rna" x="513" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="531" y="695" text-anchor="middle">M14</text><text class="nname2" x="555" y="695">Context</text><text class="ntool2" x="514" y="720">clinker</text><circle class="port-rna" cx="580" cy="674" r="3.5"/><circle class="port-rna" cx="580" cy="732" r="3.5"/></g>
-        <g><rect class="node n-rna" x="665" y="674" width="150" height="58" rx="10"/><rect class="chip-rna" x="673" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="691" y="695" text-anchor="middle">M15</text><text class="nname2" x="715" y="695">Comparative</text><text class="ntool2" x="674" y="720">Panaroo</text><circle class="port-rna" cx="740" cy="674" r="3.5"/><circle class="port-rna" cx="740" cy="732" r="3.5"/></g>
-        <g><rect class="node n-dna" x="825" y="674" width="150" height="58" rx="10"/><rect class="chip-dna" x="833" y="683" width="36" height="17" rx="4"/><text class="chip-t2" x="851" y="695" text-anchor="middle">M16</text><text class="nname2" x="875" y="695">Phylogenomics</text><text class="ntool2" x="834" y="720">Mash·NJ</text><circle class="port-dna" cx="900" cy="674" r="3.5"/><circle class="port-dna" cx="900" cy="732" r="3.5"/></g>
+        <g><rect class="node n-sh" x="475" y="1044" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="1054" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="1067" text-anchor="middle">M17</text><text class="nname" x="533" y="1068">Statistics</text><text class="ntool" x="487" y="1089">aggregates: M02–M13</text><circle class="port-sh" cx="570" cy="1100" r="4"/></g>
+        <g><rect class="node n-sh" x="475" y="1190" width="190" height="56" rx="11"/><rect class="chip-sh" x="485" y="1200" width="40" height="18" rx="5"/><text class="chip-t" x="505" y="1213" text-anchor="middle">M18</text><text class="nname" x="533" y="1214">Report</text><text class="ntool" x="487" y="1235">HTML/PDF · capstone</text><circle class="port-sh" cx="570" cy="1190" r="4"/></g>
 
-        <text class="note" x="500" y="770" text-anchor="middle">aggregates ← M02·M04·M05·M07·M08·M09·M10·M11·M12·M13</text>
-        <g><rect class="node n-sh" x="175" y="776" width="650" height="52" rx="11"/><rect class="chip-sh" x="185" y="785" width="40" height="18" rx="5"/><text class="chip-t" x="205" y="798" text-anchor="middle">M17</text><text class="nname" x="233" y="799">Statistics &amp; Aggregate</text><text class="ntool" x="560" y="799">→ dashboard_data.json</text><circle class="port-sh" cx="320" cy="776" r="4"/><circle class="port-sh" cx="500" cy="776" r="4"/><circle class="port-sh" cx="680" cy="776" r="4"/><circle class="port-sh" cx="500" cy="828" r="4"/></g>
-        <g><rect class="node n-sh" x="395" y="858" width="210" height="58" rx="11"/><rect class="chip-sh" x="405" y="868" width="40" height="18" rx="5"/><text class="chip-t" x="425" y="881" text-anchor="middle">M18</text><text class="nname" x="453" y="882">Report &amp; Export</text><text class="ntool" x="405" y="905">TR+EN HTML · zip · provenance</text><circle class="port-sh" cx="500" cy="858" r="4"/></g>
-        <text class="note" x="620" y="895">* report also embeds M01·M06·M14·M16 figures</text>
+        <text class="hublbl" x="570" y="400" text-anchor="middle">hub → M05–M16</text>
       </svg>
     </div>
+    <figcaption class="sub" style="margin:10px 2px 0">Solid colored arrows are the real <span class="mono">run()</span> dependencies (the code's <span class="mono">inputs()</span> guards + outputs each module reads). The platform split lives inside <span class="mono">M01/M03</span> (short/long/hybrid) and rejoins at <span class="mono">M04</span>; <span class="mono">M04→M18</span> is platform-agnostic. Dashed purple: diagnostic branch (<span class="mono">M02</span>). Critical modules <span class="mono">M00·M03·M04·M06</span> — failure aborts the run.</figcaption>
+    </figure>
 
-    <h2>Module matrix — tools &amp; dependencies</h2>
+    <h2>Module matrix — tools &amp; dependency</h2>
     <div class="tbl-wrap"><table>
-      <thead><tr><th style="width:48px">Code</th><th style="width:190px">Module</th><th>Tool(s)</th><th style="width:230px">Input ← (source)</th></tr></thead>
+      <thead><tr><th style="width:52px">Code</th><th style="width:170px">Module</th><th style="width:110px">Depends</th><th>Tool &amp; function</th></tr></thead>
       <tbody>
-        <tr><td class="code">M00</td><td class="mod">Input &amp; Detect <span class="tag t-sh">BACKBONE</span></td><td class="tools">detect_platform</td><td class="dep">raw input · emits <span class="mono">data_type</span></td></tr>
-        <tr><td class="code">M01</td><td class="mod">Read QC <span class="tag t-sh">BACKBONE</span></td><td class="tools">fastp (short/hybrid) · NanoPlot+Filtlong (long/hybrid)</td><td class="dep">M00 (data_type) · raw reads</td></tr>
-        <tr><td class="code">M02</td><td class="mod">Taxonomic QC <span class="tag t-sh">BACKBONE</span></td><td class="tools">Kraken2 + Bracken</td><td class="dep">M00 (data_type) · M01 (clean reads) → <span class="mono">ncbi_species</span></td></tr>
-        <tr><td class="code">M03</td><td class="mod">Assembly <span class="tag t-sh">BACKBONE</span></td><td class="tools">SPAdes (short) · Flye+Medaka (long) · Unicycler (hybrid)</td><td class="dep">M00 (data_type) · M01 (reads)</td></tr>
-        <tr><td class="code">M04</td><td class="mod">Polish &amp; Genome QC <span class="tag t-sh">BACKBONE · HUB</span></td><td class="tools">QUAST · CheckM2</td><td class="dep">M03 (draft_genome.fasta) → <span class="mono">genome.fasta</span> (fans to 11)</td></tr>
-        <tr><td class="code">M05</td><td class="mod">Species &amp; Reference <span class="tag t-en">ENRICH</span></td><td class="tools">barrnap · blastn · NCBI datasets · FastANI</td><td class="dep">M04 (genome) · M02 (ncbi_species) → closest_5/10</td></tr>
-        <tr><td class="code">M06</td><td class="mod">Annotation <span class="tag t-en">ENRICH</span></td><td class="tools">Bakta · minimap2 (ref-ordered map)</td><td class="dep">M04 (genome) · M05 (closest ref, opt.)</td></tr>
-        <tr><td class="code">M07</td><td class="mod">Strain Typing <span class="tag t-en">ENRICH</span></td><td class="tools">mlst · Kleborate / ECTyper / SISTR</td><td class="dep">M04 (genome) · M02/M05 (species)</td></tr>
-        <tr><td class="code">M08</td><td class="mod">AMR <span class="tag t-en">ENRICH</span></td><td class="tools">AMRFinderPlus</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M09</td><td class="mod">Virulence <span class="tag t-en">ENRICH</span></td><td class="tools">ABRicate (VFDB)</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M10</td><td class="mod">Plasmid <span class="tag t-en">ENRICH</span></td><td class="tools">MOB-suite (mob_recon)</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M11</td><td class="mod">Mobile Genetic Elem. <span class="tag t-en">ENRICH</span></td><td class="tools">ISEScan</td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M12</td><td class="mod">Phage/CRISPR/Defense <span class="tag t-en">ENRICH</span></td><td class="tools">geNomad <span class="na">(content-aware routing: planned)</span></td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M13</td><td class="mod">Variants <span class="tag t-en">ENRICH</span></td><td class="tools">Snippy (+ Bakta ref annotation)</td><td class="dep">M04 (query genome) · M05 (closest ref)</td></tr>
-        <tr><td class="code">M14</td><td class="mod">Genomic Context <span class="tag t-co">COMP.</span></td><td class="tools">clinker (Biopython slicer)</td><td class="dep">M06 (GBK) · M05 (ref) · M08 (amr) · M09 (vir)</td></tr>
-        <tr><td class="code">M15</td><td class="mod">Comparative <span class="tag t-co">COMP.</span></td><td class="tools">Panaroo <span class="na">(≥2 samples; N/A single)</span></td><td class="dep">M04 (genome)</td></tr>
-        <tr><td class="code">M16</td><td class="mod">Phylogenomics <span class="tag t-en">ENRICH</span></td><td class="tools">Mash + Biopython NJ tree</td><td class="dep">M04 (query) · M05 (ref + pool; &lt;2 ref → N/A)</td></tr>
-        <tr><td class="code">M17</td><td class="mod">Statistics <span class="tag t-sh">BACKBONE</span></td><td class="tools">aggregator (no external tool)</td><td class="dep">M02·M04·M05·M07·M08·M09·M10·M11·M12·M13 → dashboard_data.json</td></tr>
-        <tr><td class="code">M18</td><td class="mod">Report &amp; Export <span class="tag t-sh">BACKBONE</span></td><td class="tools">HTML export (no external tool)</td><td class="dep">M17 (dashboard) + M01·M06·M14·M16 figures → zip</td></tr>
+        <tr><td class="code">M00</td><td class="mod">Input Detection <span class="tag">SHARED</span></td><td class="dep">—</td><td>Input + platform detection (sha256, short/long/hybrid/assembly) — <b>platform decision</b></td></tr>
+        <tr><td class="code">M01</td><td class="mod">Read QC <span class="tag plat">PLATFORM</span></td><td class="dep">M00</td><td>fastp (short) · NanoPlot + Filtlong (long) · both (hybrid)</td></tr>
+        <tr><td class="code">M02</td><td class="mod">Taxonomic QC <span class="tag diag">DIAG</span></td><td class="dep">M00 (+M01)</td><td>Kraken2 + Bracken — species/contamination; N/A if DB absent</td></tr>
+        <tr><td class="code">M03</td><td class="mod">Assembly <span class="tag plat">PLATFORM</span></td><td class="dep">M00 (+M01)</td><td>SPAdes+Polypolish · Flye+Medaka · Unicycler · assembly copy — <b>critical</b></td></tr>
+        <tr><td class="code">M04</td><td class="mod">Polish &amp; QC <span class="tag">HUB</span></td><td class="dep">M03</td><td>QUAST · CheckM2 — rejoin point; polished <span class="mono">genome.fasta</span> is the single handoff. <b>Critical</b></td></tr>
+        <tr><td class="code">M05</td><td class="mod">Species &amp; Closest-N <span class="tag">SHARED</span></td><td class="dep">M04</td><td>BLAST(nt) · datasets · FastANI · barrnap</td></tr>
+        <tr><td class="code">M06</td><td class="mod">Annotation <span class="tag">SHARED</span></td><td class="dep">M04 (+M05)</td><td>Bakta (minimap2 for ref-mapping) — <b>critical</b></td></tr>
+        <tr><td class="code">M07</td><td class="mod">Strain Typing <span class="tag">SHARED</span></td><td class="dep">M04 (+M02)</td><td>mlst · Kleborate · Kaptive · chewBBACA (species-gated plugins)</td></tr>
+        <tr><td class="code">M08</td><td class="mod">AMR <span class="tag">SHARED</span></td><td class="dep">M04</td><td>AMRFinderPlus · RGI/CARD · ResFinder (ABRicate)</td></tr>
+        <tr><td class="code">M09</td><td class="mod">Virulence <span class="tag">SHARED</span></td><td class="dep">M04</td><td>VFDB (ABRicate)</td></tr>
+        <tr><td class="code">M10</td><td class="mod">Plasmids <span class="tag">SHARED</span></td><td class="dep">M04</td><td>MOB-suite · PlasmidFinder (ABRicate)</td></tr>
+        <tr><td class="code">M11</td><td class="mod">Mobile Elements <span class="tag">SHARED</span></td><td class="dep">M04</td><td>ISEScan · IntegronFinder</td></tr>
+        <tr><td class="code">M12</td><td class="mod">Phage &amp; CRISPR <span class="tag">SHARED</span></td><td class="dep">M04</td><td>geNomad — prophage + CRISPR (N/A if DB absent)</td></tr>
+        <tr><td class="code">M13</td><td class="mod">Variants <span class="tag cond">CONDITIONAL</span></td><td class="dep">M04 (+M05)</td><td>Snippy — N/A if no closest reference</td></tr>
+        <tr><td class="code">M14</td><td class="mod">Genomic Context <span class="tag cond">CONDITIONAL</span></td><td class="dep">M06 (+M05·M08·M09)</td><td>clinker — targeted gene-region synteny; N/A without inputs</td></tr>
+        <tr><td class="code">M15</td><td class="mod">Comparative <span class="tag cond">CONDITIONAL</span></td><td class="dep">M04</td><td>Panaroo — batch-only; N/A for single sample</td></tr>
+        <tr><td class="code">M16</td><td class="mod">Phylogenomics <span class="tag cond">CONDITIONAL</span></td><td class="dep">M04 (+M05)</td><td>Mash + Neighbor-Joining (Biopython) — needs ≥2 references</td></tr>
+        <tr><td class="code">M17</td><td class="mod">Statistics <span class="tag">SHARED</span></td><td class="dep">M00 (aggregates M02–M13)</td><td>Pure-Python aggregation → dashboard data</td></tr>
+        <tr><td class="code">M18</td><td class="mod">Report <span class="tag">SHARED</span></td><td class="dep">M17</td><td>HTML/PDF export (Jinja2/WeasyPrint) — capstone/leaf</td></tr>
       </tbody>
     </table></div>
-
-    <h2>Platform axis — short / long / hybrid</h2>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th style="width:70px">Module</th><th>SHORT (Illumina)</th><th>LONG (ONT)</th><th>HYBRID</th></tr></thead>
-      <tbody>
-        <tr><td class="code">M01</td><td class="tools">fastp → clean_R1/R2</td><td class="tools">NanoPlot + Filtlong → filtered_long</td><td class="tools">both</td></tr>
-        <tr><td class="code">M02</td><td class="tools">clean paired/single</td><td class="tools">single: filtered_long</td><td class="tools">paired reads</td></tr>
-        <tr><td class="code">M03</td><td class="tools">SPAdes --isolate</td><td class="tools">Flye (--nano-hq) + Medaka polish</td><td class="tools">Unicycler</td></tr>
-      </tbody>
-    </table></div>
-    <p class="sub" style="margin-top:8px">Platform only swaps the <i>tools</i> in M01–M03; everything merges at <span class="mono">genome.fasta</span>
-      and M05–M18 are platform-agnostic. An <span class="mono">ASSEMBLY_INPUT</span> skips M01/M03 (FASTA copied directly).</p>
 
     <h2>Isolated conda environments</h2>
     <div class="envs">
-      <span class="env"><b>bacforge</b> · main</span><span class="env">ali-illumina-qc</span><span class="env">ali-ont-qc</span>
-      <span class="env">ali-assembly-sr</span><span class="env">ali-flye</span><span class="env">ali-medaka</span>
-      <span class="env">ali-quast</span><span class="env">ali-checkm2</span><span class="env">ali-species</span>
-      <span class="env">ali-bakta</span><span class="env">ali-typing</span><span class="env">ali-amrfinder</span>
-      <span class="env">ali-virulence</span><span class="env">ali-mobsuite</span><span class="env">ali-mge</span>
-      <span class="env">ali-genomad</span><span class="env">ali-comparative</span><span class="env">ali-clinker</span>
-      <span class="env">ali-phylogeny</span><span class="env">ali-blast</span>
+      <span class="env"><b>bacforge</b> · main</span><span class="env"><b>ali-illumina-qc</b></span><span class="env"><b>ali-ont-qc</b></span>
+      <span class="env"><b>ali-flye</b></span><span class="env"><b>ali-medaka</b></span><span class="env"><b>ali-assembly-sr</b></span>
+      <span class="env"><b>ali-quast</b></span><span class="env"><b>ali-checkm2</b></span><span class="env"><b>ali-qc</b></span>
+      <span class="env"><b>ali-blast</b></span><span class="env"><b>ali-species</b></span><span class="env"><b>ali-comparative</b></span>
+      <span class="env"><b>ali-bakta</b></span><span class="env"><b>ali-typing</b></span><span class="env"><b>ali-kleborate</b></span>
+      <span class="env"><b>ali-kaptive</b></span><span class="env"><b>ali-chewbbaca</b></span><span class="env"><b>ali-amrfinder</b></span>
+      <span class="env"><b>ali-rgi</b></span><span class="env"><b>ali-virulence</b></span><span class="env"><b>ali-mobsuite</b></span>
+      <span class="env"><b>ali-mge</b></span><span class="env"><b>ali-genomad</b></span><span class="env"><b>ali-clinker</b></span>
     </div>
-
-    <details>
-      <summary>Full dependency list — DAG edges (real <span class="mono">run()</span> access sites)</summary>
-      <pre class="edges">M00  ← (raw input only)
-M01  ← M00  (data_type; in-memory ctx.detection)
-M02  ← M00  (data_type) · M01  (clean_R1/R2 | filtered_long)
-M03  ← M00  (data_type) · M01  (clean_R1/R2 | filtered_long)
-M04  ← M03  (draft_genome.fasta + M03_summary.json polish status)
-M05  ← M04  (genome.fasta) · M02  (ncbi_species, in-memory)
-M06  ← M04  (genome.fasta) · M05  (closest_5 → ref fasta, opt.)
-M07  ← M04  (genome.fasta) · M02/M05  (ncbi_species)
-M08  ← M04  (genome.fasta)
-M09  ← M04  (genome.fasta)
-M10  ← M04  (genome.fasta)
-M11  ← M04  (genome.fasta)
-M12  ← M04  (genome.fasta)
-M13  ← M04  (genome.fasta = query) · M05  (closest_5 → ref)
-M14  ← M06  (annotation.gbk) · M05  (ref .gbff) · M08 (amr.json) · M09 (virulence.json)
-M15  ← M04  (genome.fasta; N/A for single sample)
-M16  ← M04  (genome.fasta = query) · M05  (closest_5 + download pool)
-M17  ← M02,M04,M05,M07,M08,M09,M10,M11,M12,M13  (standardized JSON/TSV)
-M18  ← M17  (dashboard_data.json) + M01 (fastp) · M06 (map) · M14 (clinker) · M16 (tree)
-
-HUB:  M04 genome.fasta → M05–M13, M15, M16 (fan of 11 modules)
-2nd hub: M05 closest_5 → M06, M13, M14, M16 (reference strains)
-Channels: files (run_dir/&lt;M..&gt;/) + in-memory ctx.detection (data_type, ncbi_species)</pre>
-    </details>
-
-    <footer>BacForge · bacterial WGS genome analysis platform · github.com/aliarslan47/BacForge<br>
-      Invariant: platform (short·long·hybrid) only picks tools and merges at the <span class="mono">genome.fasta</span> hub;
-      enrichment modules are independent/parallel; N/A is shown honestly.</footer>
+    <footer>BacForge · Bacterial whole-genome (WGS) analysis platform · github.com/aliarslan47/BacForge<br>
+      Edges are extracted from the real <span class="mono">run()</span> dependencies. The platform split is in-module (<span class="mono">M01/M03</span>) and rejoins at <span class="mono">M04</span>; <span class="mono">M04→M18</span> is platform-agnostic. Critical modules <span class="mono">M00·M03·M04·M06</span>.</footer>
   </div>
 </div>
 

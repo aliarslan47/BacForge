@@ -3,7 +3,7 @@
 A modular, end-to-end analysis platform for prokaryotic (bacterial) whole-genome sequencing (WGS).
 
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/input-short%20%C2%B7%20long%20%C2%B7%20hybrid-3f8a7d)](docs/pipeline_architecture.html)
+[![Platform](https://img.shields.io/badge/input-short%20%C2%B7%20long%20%C2%B7%20hybrid-3f8a7d)](https://claude.ai/code/artifact/7cc8726c-d299-44e7-9072-90e7a0a66e0c)
 [![Milestone](https://img.shields.io/badge/Milestone%201-complete-brightgreen)](#roadmap)
 
 [Türkçe](README.md) · English
@@ -26,7 +26,7 @@ isolated installation.
 Shape: **branch → merge → fan → merge → report**. The platform decision (`short·long·hybrid`) only picks the
 tools at `M01`/`M03` and merges at the `M04 genome.fasta` hub; from there independent enrichment modules fan out,
 are gathered at `M17` and rejoin in the `M18` report. Interactive bilingual diagram (the full DAG, extracted
-from the real `run()` dependencies): [`docs/pipeline_architecture.html`](docs/pipeline_architecture.html).
+from the real `run()` dependencies): [**rendered diagram**](https://claude.ai/code/artifact/7cc8726c-d299-44e7-9072-90e7a0a66e0c) · source: `docs/pipeline_architecture.html`.
 
 ```mermaid
 flowchart TB

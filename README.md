@@ -3,7 +3,7 @@
 Prokaryotik (bakteriyel) tam genom dizileme (WGS) için modüler, uçtan uca bir analiz platformu.
 
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/girdi-short%20%C2%B7%20long%20%C2%B7%20hybrid-3f8a7d)](docs/pipeline_architecture.html)
+[![Platform](https://img.shields.io/badge/girdi-short%20%C2%B7%20long%20%C2%B7%20hybrid-3f8a7d)](https://claude.ai/code/artifact/7cc8726c-d299-44e7-9072-90e7a0a66e0c)
 [![Milestone](https://img.shields.io/badge/Milestone%201-tamam-brightgreen)](#yol-haritas%C4%B1)
 
 Türkçe · [English](README.en.md)
@@ -25,7 +25,7 @@ BacForge, VirusForge (virüs/faj) ve Vaxforge ile aynı mimari deseni izler; ayr
 Şema: **dallan → birleş → yelpaze → birleş → rapor**. Platform kararı (`short·long·hybrid`) yalnızca `M01`/`M03`
 araçlarını seçer ve `M04 genome.fasta` hub'ında birleşir; buradan bağımsız zenginleştirme modülleri yelpaze
 gibi açılır, `M17`'de toplanıp `M18` raporunda birleşir. Etkileşimli çift-dilli şema (gerçek `run()`
-bağımlılıklarından çıkarılmış tam DAG): [`docs/pipeline_architecture.html`](docs/pipeline_architecture.html).
+bağımlılıklarından çıkarılmış tam DAG): [**render edilmiş şema**](https://claude.ai/code/artifact/7cc8726c-d299-44e7-9072-90e7a0a66e0c) · kaynak: `docs/pipeline_architecture.html`.
 
 ```mermaid
 flowchart TB
